@@ -170,6 +170,7 @@ def signup():
         hashed_password = generate_password_hash(user_password)
         
         user_pk = str(uuid.uuid4())
+        user_avatar = ""
         user_created_at = int(time.time())
         user_deleted_at = 0
         user_blocked_at = 0
@@ -178,9 +179,9 @@ def signup():
         user_verification_key = str(uuid.uuid4())
 
         db, cursor = x.db()
-        q = 'INSERT INTO users VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
+        q = 'INSERT INTO users VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
         cursor.execute(q, (user_pk, user_name, user_last_name, user_email, 
-                           hashed_password, user_created_at, user_deleted_at, user_blocked_at, 
+                           hashed_password, user_avatar, user_created_at, user_deleted_at, user_blocked_at, 
                            user_updated_at, user_verified_at, user_verification_key))
         
         # x.send_verify_email(user_email, user_verification_key)
@@ -217,7 +218,7 @@ def login():
         db, cursor = x.db()
         q = """ SELECT * FROM users 
                 JOIN users_roles 
-                ON user_pk = user_role_user_pk 
+                ON user_pk = user_role_user_fk 
                 JOIN roles
                 ON role_pk = user_role_role_fk
                 WHERE user_email = %s"""
@@ -333,7 +334,7 @@ def user_update():
 ##############################
 @app.put("/users/block/<user_pk>")
 def user_block(user_pk):
-    try:
+    try:        
         if not "admin" in session.get("user").get("roles"): return redirect(url_for("view_login"))
         user_pk = x.validate_uuid4(user_pk)
         user_blocked_at = int(time.time())

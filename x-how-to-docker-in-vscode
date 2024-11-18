@@ -13,7 +13,8 @@ Install the Python extension
 If the outline is gone:
     Go to "View->Open View" and type "Outline". Select it
 
-
+From the temrminal, execute commands in docker
+docker exec -it fulldemo_flask /bin/bash 
 
 
 

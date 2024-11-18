@@ -12,6 +12,11 @@ from email.mime.text import MIMEText
 from icecream import ic
 ic.configureOutput(prefix=f'***** | ', includeContext=True)
 
+UNSPLASH_ACCESS_KEY = 'YOUR_KEY_HERE'
+ADMIN_ROLE_PK = "16fd2706-8baf-433b-82eb-8c7fada847da"
+CUSTOMER_ROLE_PK = "c56a4180-65aa-42ec-a945-5fd21dec0538"
+PARTNER_ROLE_PK = "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+RESTAURANT_ROLE_PK = "9f8c8d22-5a67-4b6c-89d7-58f8b8cb4e15"
 
 
 # form to get data from input fields
@@ -141,11 +146,11 @@ def send_verify_email(to_email, user_verification_key):
         # Create a gmail fullflaskdemomail
         # Enable (turn on) 2 step verification/factor in the google account manager
         # Visit: https://myaccount.google.com/apppasswords
-        # Copy the key : pdru ctfd jdhk xxci
+
 
         # Email and password of the sender's Gmail account
         sender_email = "fullflaskdemomail@gmail.com"
-        password = "qtfumoyslvhoibrs"  # If 2FA is on, use an App Password instead
+        password = "YOUR_KEY_HERE"  # If 2FA is on, use an App Password instead
 
         # Receiver email address
         receiver_email = "fullflaskdemomail@gmail.com"

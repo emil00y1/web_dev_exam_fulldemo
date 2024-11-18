@@ -1,13 +1,11 @@
 import requests
 import os
-
-# Unsplash API key
-UNSPLASH_ACCESS_KEY = 'xgOowUdk_g1qhlpDB0bGeceAJJqTqni8nyKcR91uZ9g'
+import x
 
 # Unsplash search endpoint for photos
 url = "https://api.unsplash.com/search/photos"
 headers = {
-    "Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"
+    "Authorization": f"Client-ID {x.UNSPLASH_ACCESS_KEY}"
 }
 
 # Search parameters
