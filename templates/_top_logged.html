@@ -3,11 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='mixhtml.css') }}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/mojocss"></script>
     <title>Document</title>
 </head>
-<body>
-    <form method="POST" action="{{url_for('logout')}}">
-        <button>
-            Logout
-        </button>
-    </form>
+<body class="w-full h-100vh text-c-gray:-16">
+    <header class="bg-c-white pa-6 mb-6 shadow-sm">
+        <nav class="d-flex j-content-between a-items-center w-full max-w-1200 mx-auto">
+            <div class="text-c-black text-bold text-xl">
+                <a href="/" class="no-u-hover text-c-black">Company</a>
+            </div>
+            <form method="POST" action="{{ url_for('logout') }}">
+                <button class="text-c-white bg-c-tealblue:-5 h-hover:bg-c-tealblue:-6 p-3 px-5 br-8 no-u-hover">
+                    Logout
+                </button>
+            </form>
+        </nav>
+    </header>
+
