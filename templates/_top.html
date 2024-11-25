@@ -7,9 +7,31 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/mojocss"></script>
     <title>
-        {{ title or "Company" }}
+    Company
     </title>
 </head>
 <body class="w-full h-100vh text-c-gray:-16">
 
+    <header class="bg-c-white pa-6 mb-6 shadow-sm">
+        <nav class="d-flex j-content-between a-items-center w-full max-w-1200 mx-auto">
+            <!-- Company Name -->
+            <div class="text-c-black text-bold text-xl">
+                <a href="/" class="no-u-hover text-c-black:+10">Company</a>
+            </div>
+            <!-- Login and Signup Buttons -->
+            <div class="d-flex gap-4">
+                <button class="text-c-white text-md text-bold px-5 no-u-hover bg-c-tealblue:-5 h-hover:bg-c-tealblue:-6 rounded-sm">
+                    <a href="{{ url_for('view_login') }}" class="text-c-white">Login</a>
+                </button>
+                <button class="text-c-white text-md text-bold px-5 no-u-hover bg-c-tealblue:-5 h-hover:bg-c-tealblue:-6 rounded-sm">
+                    <a href="{{ url_for('view_signup') }}" class="text-c-white">Signup</a>
+                </button>
+            </div>
+        </nav>
+    </header>
+    
+    
+
     <div id="toast" class="d-flex flex-col j-content-center p-fixed w-full top-4 z-10"></div>
+</body>
+</html>
