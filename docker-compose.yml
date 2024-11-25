@@ -10,7 +10,7 @@ services:
       DB_HOST: mysql
       DB_USER: root
       DB_PASSWORD: password
-      DB_NAME: company    
+      DB_NAME: company
     ports:
       - 80:80
     volumes:
@@ -36,7 +36,7 @@ services:
       PMA_HOST: mysql
       MYSQL_ROOT_PASSWORD: password
     ports:
-      - 8080:80
+      - 9090:80
 
   arangodb:
     image: arangodb:latest
@@ -47,7 +47,6 @@ services:
       - arangodb_data:/var/lib/arangodb3
     ports:
       - 8529:8529
-
 
   redis:
     image: redis:latest
@@ -61,5 +60,3 @@ volumes:
   mysql_data:
   arangodb_data:
   redis_data:
-
-

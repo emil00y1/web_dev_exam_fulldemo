@@ -137,6 +137,15 @@ def view_choose_role():
 
 
 ##############################
+@app.get("/profile")
+def show_profile():
+    user = session.get("user", "")
+    if not user:
+        return redirect(url_for("get_index.show_index"))
+    return render_template("profile.html", user=user)
+
+
+##############################
 ##############################
 ##############################
 
@@ -476,6 +485,7 @@ def verify_user(verification_key):
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()    
+
 
 
 
