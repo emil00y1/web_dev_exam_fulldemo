@@ -138,11 +138,12 @@ def view_choose_role():
 
 ##############################
 @app.get("/profile")
+@x.no_cache
 def show_profile():
     user = session.get("user", "")
     if not user:
         return redirect(url_for("get_index.show_index"))
-    return render_template("profile.html", user=user)
+    return render_template("profile.html",x=x, user=user)
 
 
 ##############################
@@ -193,7 +194,7 @@ def signup():
                            hashed_password, user_avatar, user_created_at, user_deleted_at, user_blocked_at, 
                            user_updated_at, user_verified_at, user_verification_key))
         
-        # x.send_verify_email(user_email, user_verification_key)
+        x.send_verify_email(user_email, user_verification_key)
         db.commit()
     
         return """<template mix-redirect="/login"></template>""", 201
@@ -306,40 +307,77 @@ def _________PUT_________(): pass
 ##############################
 ##############################
 
-@app.put("/users")
-def user_update():
+# @app.put("/users")
+# def user_update():
+#     print("update")
+#     try:
+#         if not session.get("user"): x.raise_custom_exception("please login", 401)
+
+#         user_pk = session.get("user").get("user_pk")
+#         user_name = x.validate_user_name()
+#         user_last_name = x.validate_user_last_name()
+#         user_email = x.validate_user_email()
+
+#         user_updated_at = int(time.time())
+
+#         db, cursor = x.db()
+#         q = """ UPDATE users
+#                 SET user_name = %s, user_last_name = %s, user_email = %s, user_updated_at = %s
+#                 WHERE user_pk = %s
+#             """
+#         cursor.execute(q, (user_name, user_last_name, user_email, user_updated_at, user_pk))
+#         if cursor.rowcount != 1: x.raise_custom_exception("cannot update user", 401)
+#         db.commit()
+#         return """<template>user updated</template>"""
+#     except Exception as ex:
+#         ic(ex)
+#         if "db" in locals(): db.rollback()
+#         if isinstance(ex, x.CustomException): 
+#             toast = render_template("___toast.html", message=ex.message)
+#             return f"""<template mix-target="#toast" mix-bottom>{toast}</template>""", ex.code
+#         if isinstance(ex, x.mysql.connector.Error):
+#             if "users.user_email" in str(ex):
+#                 toast = render_template("___toast.html", message="email not available")
+#                 return f"""<template mix-target="#toast" mix-bottom>{toast}</template>""", 400
+#             return "<template>System upgrading</template>", 500        
+#         return "<template>System under maintenance</template>", 500    
+#     finally:
+#         if "cursor" in locals(): cursor.close()
+#         if "db" in locals(): db.close()
+
+
+@app.put("/users/<user_pk>")
+def user_update(user_pk):
     try:
         if not session.get("user"): x.raise_custom_exception("please login", 401)
-
-        user_pk = session.get("user").get("user_pk")
+        user_pk = x.validate_uuid4(user_pk)
         user_name = x.validate_user_name()
         user_last_name = x.validate_user_last_name()
         user_email = x.validate_user_email()
-
         user_updated_at = int(time.time())
-
+       
         db, cursor = x.db()
-        q = """ UPDATE users
-                SET user_name = %s, user_last_name = %s, user_email = %s, user_updated_at = %s
-                WHERE user_pk = %s
-            """
+        q = "UPDATE users SET user_name = %s, user_last_name = %s, user_email = %s, user_updated_at = %s WHERE user_pk = %s"
         cursor.execute(q, (user_name, user_last_name, user_email, user_updated_at, user_pk))
         if cursor.rowcount != 1: x.raise_custom_exception("cannot update user", 401)
         db.commit()
-        return """<template>user updated</template>"""
+        return """<template mix-target="#toast">User updated</template>"""
     except Exception as ex:
         ic(ex)
         if "db" in locals(): db.rollback()
-        if isinstance(ex, x.CustomException): return f"""<template mix-target="#toast" mix-bottom>{ex.message}</template>""", ex.code
+        if isinstance(ex, x.CustomException):
+            toast = render_template("___toast.html", message=ex.message)
+            return f"""<template mix-target="#toast" mix-bottom>{toast}</template>""", ex.code
         if isinstance(ex, x.mysql.connector.Error):
-            if "users.user_email" in str(ex): return "<template>email not available</template>", 400
-            return "<template>System upgrating</template>", 500        
+            if "users.user_email" in str(ex):
+                toast = render_template("___toast.html", message="email not available")
+                return f"""<template mix-target="#toast" mix-bottom>{toast}</template>""", 400
+            return "<template>System upgrading</template>", 500        
         return "<template>System under maintenance</template>", 500    
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
-
-
+        
 ##############################
 @app.put("/users/block/<user_pk>")
 def user_block(user_pk):
