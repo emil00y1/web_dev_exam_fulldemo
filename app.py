@@ -52,20 +52,30 @@ def view_test_get_redis():
 def view_index():
     try:
         db, cursor = x.db()
-        q = """ SELECT * FROM coords 
-                """
+        # Query to fetch all rows from the coords table
+        q = """SELECT * FROM coords"""
         cursor.execute(q)
         rows = cursor.fetchall()
+        
         if not rows:
-            toast = render_template("___toast.html", message="restaurant not found")
-            return f"""<template mix-target="#toast">{toast}</template>""", 400 
-        coords = {
-            "coords_pk": rows[0]["coords_pk"],
-            "coordinates": rows[0]["coordinates"],
-            "restaurant_fk": rows[0]["restaurant_fk"],
-        }
+            toast = render_template("___toast.html", message="No coordinates found")
+            return f"""<template mix-target="#toast">{toast}</template>""", 400
+        
+        # Convert rows into a list of dictionaries
+        coords = [
+            {
+                "coords_pk": row["coords_pk"],
+                "coordinates": row["coordinates"],
+                "restaurant_fk": row["restaurant_fk"]
+            }
+            for row in rows
+        ]
+        
+        # Store all coordinates in the session (if needed)
         session["coords"] = coords
-        return render_template("view_index.html", coords=coords )
+        
+        # Pass all coordinates to the template
+        return render_template("view_index.html", coords=coords)
     except Exception as ex:
         ic(ex)
         if "db" in locals(): db.rollback()
