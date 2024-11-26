@@ -48,9 +48,38 @@ def view_test_get_redis():
 
 ##############################
 @app.get("/")
+@x.no_cache
 def view_index():
-    name = "X"
-    return render_template("view_index.html", name=name)
+    try:
+        db, cursor = x.db()
+        q = """ SELECT * FROM coords 
+                """
+        cursor.execute(q)
+        rows = cursor.fetchall()
+        if not rows:
+            toast = render_template("___toast.html", message="restaurant not found")
+            return f"""<template mix-target="#toast">{toast}</template>""", 400 
+        coords = {
+            "coords_pk": rows[0]["coords_pk"],
+            "coordinates": rows[0]["coordinates"],
+            "restaurant_fk": rows[0]["restaurant_fk"],
+        }
+        session["coords"] = coords
+        return render_template("view_index.html", coords=coords )
+    except Exception as ex:
+        ic(ex)
+        if "db" in locals(): db.rollback()
+        if isinstance(ex, x.CustomException): 
+            toast = render_template("___toast.html", message=ex.message)
+            return f"""<template mix-target="#toast" mix-bottom>{toast}</template>""", ex.code    
+        if isinstance(ex, x.mysql.connector.Error):
+            ic(ex)
+            return "<template>System upgrating</template>", 500        
+        return "<template>System under maintenance</template>", 500  
+    finally:
+        if "cursor" in locals(): cursor.close()
+        if "db" in locals(): db.close()
+
 
 ##############################
 @app.get("/signup")
@@ -534,10 +563,6 @@ def verify_user(verification_key):
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()    
-
-
-
-
 
 
 
