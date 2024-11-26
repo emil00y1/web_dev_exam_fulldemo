@@ -20,12 +20,10 @@
             </div>
             <!-- Login and Signup Buttons -->
             <div class="d-flex gap-4">
-                <button class="text-c-white text-md text-bold px-5 no-u-hover bg-c-tealblue:-5 h-hover:bg-c-tealblue:-6 rounded-sm">
-                    <a href="{{ url_for('view_login') }}" class="text-c-white">Login</a>
-                </button>
-                <button class="text-c-white text-md text-bold px-5 no-u-hover bg-c-tealblue:-5 h-hover:bg-c-tealblue:-6 rounded-sm">
-                    <a href="{{ url_for('view_signup') }}" class="text-c-white">Signup</a>
-                </button>
+                <a href="{{ url_for('view_login') }}" class="text-c-white bg-c-tealblue:-5 cursor-pointer py-3 px-5 rounded-sm" hover="bg-c-tealblue:-8">Login</a>
+               
+                <a href="{{ url_for('view_signup') }}" class="text-c-white bg-c-tealblue:-5 cursor-pointer py-3 px-5 rounded-sm" hover="bg-c-tealblue:-8">Signup</a>
+             
             </div>
         </nav>
     </header>

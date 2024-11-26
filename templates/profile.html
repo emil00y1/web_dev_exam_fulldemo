@@ -1,6 +1,6 @@
 {% include "_top_logged.html" %}
 
-<main class="w-full">
+<main class="w-full mx-8">
   <h1>Hi <span class="text-t-capitalize">{{ user["user_name"] }}</span></h1>
   <section>
     <h2>Edit profile</h2>
@@ -48,6 +48,8 @@
         mix-data="#frm_user_update"
         mix-wait="#update-spinner"
         mix-default="Update profile"
+        class="text-c-white bg-c-tealblue:-5 cursor-pointer"
+        hover="bg-c-tealblue:-8"
     >
         Update profile
     </button>
