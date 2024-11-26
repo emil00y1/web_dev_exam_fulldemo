@@ -361,7 +361,18 @@ def user_update(user_pk):
         cursor.execute(q, (user_name, user_last_name, user_email, user_updated_at, user_pk))
         if cursor.rowcount != 1: x.raise_custom_exception("cannot update user", 401)
         db.commit()
-        return """<template mix-target="#toast">User updated</template>"""
+
+        # Update the session user data
+        session['user'].update({
+            'user_name': user_name,
+            'user_last_name': user_last_name,
+            'user_email': user_email,
+            'user_updated_at': user_updated_at
+        })
+        
+        toast = render_template("___toast.html", message="Profile updated")
+        return f"""<template mix-target="#toast">{toast}</template>"""
+
     except Exception as ex:
         ic(ex)
         if "db" in locals(): db.rollback()
@@ -377,7 +388,7 @@ def user_update(user_pk):
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
-        
+
 ##############################
 @app.put("/users/block/<user_pk>")
 def user_block(user_pk):
