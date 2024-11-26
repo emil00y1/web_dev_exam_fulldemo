@@ -1,7 +1,7 @@
 
 {% include "_top.html" %}
 
-<main class="w-full h-100vh d-flex p-items-center">
+<main class="w-full h-80vh d-flex p-items-center">
 
     <form id="frm_user_signup" class="w-25% d-flex flex-col gap-4 mx-auto">
         
@@ -51,11 +51,11 @@
             <input name="user_password" type="text" mix-check="{{ x.REGEX_USER_PASSWORD }}">
         </div>        
 
-        <button mix-post="/users" mix-data="#frm_user_signup">
+        <button mix-post="/users" mix-data="#frm_user_signup" class="bg-c-tealblue:-3 text-c-white">
             Signup
         </button>
 
-        <a href="{{url_for('view_login')}}" class="text-a-center">Login</a>
+        <p>Already have an account? | <a href="{{url_for('view_login')}}" class="text-a-center text-c-black text-d-underline">Login</a></p>
 
     </form>
 
