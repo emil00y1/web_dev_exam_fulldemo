@@ -75,9 +75,10 @@ def view_index():
         
         # Store all coordinates in the session (if needed)
         session["coords"] = coords
+        user = session.get("user", "")
         
         # Pass all coordinates to the template
-        return render_template("view_index.html", coords=coords)
+        return render_template("view_index.html", coords=coords, user=user)
     except Exception as ex:
         ic(ex)
         if "db" in locals(): db.rollback()
@@ -198,8 +199,6 @@ def show_profile():
     if not user:
         return redirect(url_for("get_index.show_index"))
     return render_template("profile.html",x=x, user=user)
-
-
 
 
 ##############################
