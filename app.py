@@ -15,7 +15,9 @@ app = Flask(__name__)
 app.config['SESSION_TYPE'] = 'filesystem'  # or 'redis', etc.
 Session(app)
 
-
+@app.template_filter('strftime')
+def strftime_filter(timestamp, format='%A, %d %B %Y'):
+    return time.strftime(format, timestamp)
 # app.secret_key = "your_secret_key"
 
 ##############################
@@ -154,13 +156,26 @@ def view_partner():
 @app.get("/admin")
 @x.no_cache
 def view_admin():
+    # Check if user is logged in
     if not session.get("user", ""): 
         return redirect(url_for("view_login"))
+    
     user = session.get("user")
+    
+    # Check if user has admin role
     if not "admin" in user.get("roles", ""):
         return redirect(url_for("view_login"))
-    return render_template("view_admin.html")
-
+    
+    try:
+        # Get all users from database
+        db, cursor = x.db()
+        cursor.execute("SELECT * FROM users")
+        users = cursor.fetchall()
+        
+        return render_template("view_admin.html", users=users, time=time)
+    finally:
+        if 'cursor' in locals(): cursor.close()
+        if 'db' in locals(): db.close()
 
 
 ##############################
@@ -183,6 +198,80 @@ def show_profile():
     if not user:
         return redirect(url_for("get_index.show_index"))
     return render_template("profile.html",x=x, user=user)
+
+
+
+
+##############################
+@app.get("/users/delete/<user_pk>")
+def user_delete(user_pk):
+    try:
+        if not "admin" in session.get("user", {}).get("roles", []): 
+            return redirect(url_for("view_login"))
+
+        user = {
+            "user_pk": x.validate_uuid4(user_pk),
+            "user_deleted_at": int(time.time())
+        }
+
+        db, cursor = x.db()
+        cursor.execute("""UPDATE users 
+                      SET user_deleted_at = %s 
+                      WHERE user_pk = %s""", 
+                      (user["user_deleted_at"], user["user_pk"]))
+        
+        if cursor.rowcount == 0:
+            x.raise_custom_exception("User could not be deleted", 404)
+        
+        db.commit()
+        
+        # Format the deleted_at date and create the replacement HTML
+        formatted_date = time.strftime('%A, %d %B %Y', time.localtime(user["user_deleted_at"]))
+        deleted_html = f'<div class="text-c-white d-flex a-items-center">deleted at: {formatted_date}</div>'
+        
+        toast = render_template("___toast.html", message="User deleted")
+        
+        # Return both the deleted_at text and toast
+        return f"""
+            <template mix-target='#actions-{user_pk}'>
+                {deleted_html}
+            </template>
+            <template mix-target="#toast" mix-bottom>
+                {toast}
+            </template>
+            """
+
+    except Exception as ex:
+        ic(ex)
+        if "db" in locals(): db.rollback()
+        
+        if isinstance(ex, x.CustomException):
+            toast = render_template("___toast.html", message=ex.message)
+            return f"""
+                <template mix-target="#toast" mix-bottom>
+                    {toast}
+                </template>
+                """, ex.code
+        
+        if isinstance(ex, x.mysql.connector.Error):
+            ic(ex)
+            toast = render_template("___toast.html", message="Database error")
+            return f"""
+                <template mix-target="#toast" mix-bottom>
+                    {toast}
+                </template>
+                """, 500
+        
+        toast = render_template("___toast.html", message="System under maintenance")
+        return f"""
+            <template mix-target="#toast" mix-bottom>
+                {toast}
+            </template>
+            """, 500
+
+    finally:
+        if "cursor" in locals(): cursor.close()
+        if "db" in locals(): db.close()
 
 
 ##############################
@@ -429,62 +518,143 @@ def user_update(user_pk):
         if "db" in locals(): db.close()
 
 ##############################
-@app.put("/users/block/<user_pk>")
+@app.get("/users/block/<user_pk>")
 def user_block(user_pk):
-    try:        
-        if not "admin" in session.get("user").get("roles"): return redirect(url_for("view_login"))
-        user_pk = x.validate_uuid4(user_pk)
-        user_blocked_at = int(time.time())
+    try:
+        if not "admin" in session.get("user", {}).get("roles", []): 
+            return redirect(url_for("view_login"))
+
+        user = {
+            "user_pk": x.validate_uuid4(user_pk),
+            "user_blocked_at": int(time.time())
+        }
+
         db, cursor = x.db()
-        q = 'UPDATE users SET user_blocked_at = %s WHERE user_pk = %s'
-        cursor.execute(q, (user_blocked_at, user_pk))
-        if cursor.rowcount != 1: x.raise_custom_exception("cannot block user", 400)
+        cursor.execute("""UPDATE users 
+                      SET user_blocked_at = %s 
+                      WHERE user_pk = %s 
+                      AND user_blocked_at = 0""", 
+                      (user["user_blocked_at"], user["user_pk"]))
+        
+        if cursor.rowcount == 0:
+            x.raise_custom_exception("User could not be blocked", 404)
+        
         db.commit()
-        return """<template>user blocked</template>"""
-    
+        
+        # Render both templates
+        btn_unblock = render_template("___btn_unblock_user.html", user=user)
+        toast = render_template("___toast.html", message="User blocked")
+        
+        # Return both templates with their targets
+        return f"""
+            <template mix-target='#block-{user_pk}' mix-replace>
+                {btn_unblock}
+            </template>
+            <template mix-target="#toast" mix-bottom>
+                {toast}
+            </template>
+            """
+
     except Exception as ex:
         ic(ex)
         if "db" in locals(): db.rollback()
-        if isinstance(ex, x.CustomException): 
-            return f"""<template mix-target="#toast" mix-bottom>{ex.message}</template>""", ex.code        
+        
+        if isinstance(ex, x.CustomException):
+            toast = render_template("___toast.html", message=ex.message)
+            return f"""
+                <template mix-target="#toast" mix-bottom>
+                    {toast}
+                </template>
+                """, ex.code
+        
         if isinstance(ex, x.mysql.connector.Error):
             ic(ex)
-            return "<template>Database error</template>", 500        
-        return "<template>System under maintenance</template>", 500  
+            toast = render_template("___toast.html", message="Database error")
+            return f"""
+                <template mix-target="#toast" mix-bottom>
+                    {toast}
+                </template>
+                """, 500
+        
+        toast = render_template("___toast.html", message="System under maintenance")
+        return f"""
+            <template mix-target="#toast" mix-bottom>
+                {toast}
+            </template>
+            """, 500
+
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
-
 
 ##############################
-@app.put("/users/unblock/<user_pk>")
+@app.get("/users/unblock/<user_pk>")
 def user_unblock(user_pk):
     try:
-        if not "admin" in session.get("user").get("roles"): return redirect(url_for("view_login"))
-        user_pk = x.validate_uuid4(user_pk)
-        user_blocked_at = 0
-        db, cursor = x.db()
-        q = 'UPDATE users SET user_blocked_at = %s WHERE user_pk = %s'
-        cursor.execute(q, (user_blocked_at, user_pk))
-        if cursor.rowcount != 1: x.raise_custom_exception("cannot unblock user", 400)
-        db.commit()
-        return """<template>user unblocked</template>"""
-    
-    except Exception as ex:
+        if not "admin" in session.get("user", {}).get("roles", []): 
+            return redirect(url_for("view_login"))
 
+        user = {
+            "user_pk": x.validate_uuid4(user_pk)
+        }
+
+        db, cursor = x.db()
+        cursor.execute("""UPDATE users 
+                      SET user_blocked_at = 0 
+                      WHERE user_pk = %s 
+                      AND user_blocked_at != 0""", 
+                      (user["user_pk"],))
+        
+        if cursor.rowcount == 0:
+            x.raise_custom_exception("User could not be unblocked", 404)
+        
+        db.commit()
+        
+        # Render both templates
+        btn_block = render_template("___btn_block_user.html", user=user)
+        toast = render_template("___toast.html", message="User unblocked")
+        
+        # Return both templates with their targets
+        return f"""
+            <template mix-target='#unblock-{user_pk}' mix-replace>
+                {btn_block}
+            </template>
+            <template mix-target="#toast" mix-bottom>
+                {toast}
+            </template>
+            """
+
+    except Exception as ex:
         ic(ex)
         if "db" in locals(): db.rollback()
-        if isinstance(ex, x.CustomException): 
-            return f"""<template mix-target="#toast" mix-bottom>{ex.message}</template>""", ex.code        
+        
+        if isinstance(ex, x.CustomException):
+            toast = render_template("___toast.html", message=ex.message)
+            return f"""
+                <template mix-target="#toast" mix-bottom>
+                    {toast}
+                </template>
+                """, ex.code
+        
         if isinstance(ex, x.mysql.connector.Error):
             ic(ex)
-            return "<template>Database error</template>", 500        
-        return "<template>System under maintenance</template>", 500  
-    
+            toast = render_template("___toast.html", message="Database error")
+            return f"""
+                <template mix-target="#toast" mix-bottom>
+                    {toast}
+                </template>
+                """, 500
+        
+        toast = render_template("___toast.html", message="System under maintenance")
+        return f"""
+            <template mix-target="#toast" mix-bottom>
+                {toast}
+            </template>
+            """, 500
+
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
-
 
 
 
@@ -497,40 +667,6 @@ def _________DELETE_________(): pass
 ##############################
 ##############################
 ##############################
-
-
-@app.delete("/users/<user_pk>")
-def user_delete(user_pk):
-    try:
-        # Check if user is logged
-        if not session.get("user", ""): return redirect(url_for("view_login"))
-        # Check if it is an admin
-        if not "admin" in session.get("user").get("roles"): return redirect(url_for("view_login"))
-        user_pk = x.validate_uuid4(user_pk)
-        user_deleted_at = int(time.time())
-        db, cursor = x.db()
-        q = 'UPDATE users SET user_deleted_at = %s WHERE user_pk = %s'
-        cursor.execute(q, (user_deleted_at, user_pk))
-        if cursor.rowcount != 1: x.raise_custom_exception("cannot delete user", 400)
-        db.commit()
-        return """<template>user deleted</template>"""
-    
-    except Exception as ex:
-
-        ic(ex)
-        if "db" in locals(): db.rollback()
-        if isinstance(ex, x.CustomException): 
-            return f"""<template mix-target="#toast" mix-bottom>{ex.message}</template>""", ex.code        
-        if isinstance(ex, x.mysql.connector.Error):
-            ic(ex)
-            return "<template>Database error</template>", 500        
-        return "<template>System under maintenance</template>", 500  
-    
-    finally:
-        if "cursor" in locals(): cursor.close()
-        if "db" in locals(): db.close()
-
-
 
 
 ##############################

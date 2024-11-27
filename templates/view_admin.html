@@ -1,7 +1,52 @@
 
-
-    {% include "_top_logged.html" %}
-
-    Admin
-
-    {% include "_bottom.html" %}
+{% include "_top.html" %} 
+<main class="mx-8">
+    <div>
+        <h1>Admin Dashboard</h1>
+        <div class="d-flex flex-col ">
+            <h2>All users</h2>
+           <section class="rounded-sm">
+                <div
+                    class="d-flex py-4 a-content-center p-content-center bg-c-charocoal:-4 text-c-white:-6 border-b-1 text-110">
+                    <div class="px-6 flex-1 text-w-medium">First Name</div>
+                    <div class="px-6 flex-1 text-w-medium">Email</div>
+                </div>
+                <div id="users">
+                    {% for user in users %}
+                        <article id="u{{ user['user_pk'] }}" class="d-flex px-4 a-content-center p-content-center min-h-14 bg-c-white:-8
+                            {% if loop.index is odd %}bg-c-white:-2{% endif %}">
+                            
+                            <div class="py-1 flex-1 text-sm a-content-center text-100">
+                                {{ user["user_name"] }}
+                            </div>
+                            <div class="py-1 flex-1 text-sm a-content-center text-100">
+                                {{ user["user_email"] }}
+                            </div>
+                           <div class="py-1 flex-1 d-flex j-content-end a-items-center" id="actions-{{user['user_pk']}}">
+                                {% if user["user_deleted_at"] == 0 %}
+                                    {% if user["user_blocked_at"] == 0 %}
+                                        {% include "___btn_block_user.html" %}
+                                    {% else %}
+                                        {% include "___btn_unblock_user.html" %}
+                                    {% endif %}
+                                {% endif %}
+    
+                                {% if user["user_deleted_at"] == 0 %}
+                                    <button class="bg-none px-3 py-1 rounded-sm cursor-pointe text-100r"
+                                        title="Delete User" mix-get="/users/delete/{{user['user_pk']}}">
+                                        Delete user
+                                    </button>
+                                {% else %}
+                                    {% set user_deleted_at = time.localtime(user['user_deleted_at'])|strftime('%A, %d %B %Y') %}
+                                    <div class="d-flex a-items-center text-100">deleted at: {{ user_deleted_at }}</div>
+                                {% endif %}
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+           </section>
+        </div>
+    </div>
+</main>
+ 
+ {% include "_bottom.html" %}
