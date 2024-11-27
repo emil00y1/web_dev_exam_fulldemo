@@ -87,7 +87,7 @@ def view_index():
             return f"""<template mix-target="#toast" mix-bottom>{toast}</template>""", ex.code    
         if isinstance(ex, x.mysql.connector.Error):
             ic(ex)
-            return "<template>System upgrating</template>", 500        
+            return "<template>System upgrading</template>", 500        
         return "<template>System under maintenance</template>", 500  
     finally:
         if "cursor" in locals(): cursor.close()
