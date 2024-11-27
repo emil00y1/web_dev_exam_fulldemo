@@ -235,6 +235,11 @@ def user_delete(user_pk):
         }
 
         db, cursor = x.db()
+        cursor.execute("""SELECT * FROM users WHERE user_pk = %s""", (user["user_pk"],))
+        user_data = cursor.fetchone()
+        user_email = user_data["user_email"]
+        user_name = user_data["user_name"]
+
         cursor.execute("""UPDATE users 
                       SET user_deleted_at = %s 
                       WHERE user_pk = %s""", 
@@ -251,6 +256,9 @@ def user_delete(user_pk):
         
         toast = render_template("___toast.html", message="User deleted")
         
+        email_body = f"""<h1>Account deleted</h1>
+          <p>Hi {user_name}, your account has been deleted. We are sad to see you go.</p>"""
+        x.send_email(user_email, "Your account has been deleted", email_body)
         # Return both the deleted_at text and toast
         return f"""
             <template mix-target='#actions-{user_pk}'>
@@ -306,6 +314,21 @@ def item_delete(item_pk):
         }
 
         db, cursor = x.db()
+
+        cursor.execute("""SELECT 
+                            items.*, 
+                            users.user_name,
+                            users.user_email  
+                        FROM 
+                            items 
+                        LEFT JOIN 
+                            users ON items.restaurant_fk = users.user_pk
+                        WHERE 
+                            items.item_pk = %s""", (item["item_pk"],))
+        user_data = cursor.fetchone()
+        user_email = user_data["user_email"]
+        user_name = user_data["user_name"]
+
         cursor.execute("""UPDATE items 
                       SET item_deleted_at = %s 
                       WHERE item_pk = %s""", 
@@ -322,6 +345,9 @@ def item_delete(item_pk):
         
         toast = render_template("___toast.html", message="Item deleted")
         
+        email_body = f"""<h1>Item deleted</h1>
+          <p>Hi {user_name}, your '{user_data["item_title"]}' menu item has been deleted. Please contact support if you have any questions.</p>"""
+        x.send_email(user_email, "Your item has been deleted", email_body)
         # Return both the deleted_at text and toast
         return f"""
             <template mix-target='#actions-{item_pk}'>
@@ -413,7 +439,9 @@ def signup():
                            hashed_password, user_avatar, user_created_at, user_deleted_at, user_blocked_at, 
                            user_updated_at, user_verified_at, user_verification_key))
         
-        x.send_verify_email(user_email, user_verification_key)
+
+        email_body = f"""To verify your account, please <a href="http://127.0.0.1/verify/{user_verification_key}">click here</a>"""
+        x.send_email(user_email, "Please verify your account", email_body)
         db.commit()
     
         return """<template mix-redirect="/login"></template>""", 201
@@ -622,6 +650,13 @@ def user_block(user_pk):
         }
 
         db, cursor = x.db()
+
+        cursor.execute("""SELECT * FROM users WHERE user_pk = %s""", (user["user_pk"],))
+
+        user_data = cursor.fetchone()
+        user_email = user_data["user_email"]
+        user_name = user_data["user_name"]
+
         cursor.execute("""UPDATE users 
                       SET user_blocked_at = %s 
                       WHERE user_pk = %s 
@@ -637,6 +672,12 @@ def user_block(user_pk):
         btn_unblock = render_template("___btn_unblock_user.html", user=user)
         toast = render_template("___toast.html", message="User blocked")
         
+        # Send email
+      
+        email_body = f"""<h1>Account blocked</h1>
+          <p>Hi {user_name}, your account has been blocked. Please contact support for more information.</p>"""
+        x.send_email(user_email, "Your account has been blocked", email_body)
+
         # Return both templates with their targets
         return f"""
             <template mix-target='#block-{user_pk}' mix-replace>
@@ -691,6 +732,12 @@ def user_unblock(user_pk):
         }
 
         db, cursor = x.db()
+
+        cursor.execute("""SELECT * FROM users WHERE user_pk = %s""", (user["user_pk"],))
+        user_data = cursor.fetchone()
+        user_email = user_data["user_email"]
+        user_name = user_data["user_name"]
+
         cursor.execute("""UPDATE users 
                       SET user_blocked_at = 0 
                       WHERE user_pk = %s 
@@ -706,6 +753,10 @@ def user_unblock(user_pk):
         btn_block = render_template("___btn_block_user.html", user=user)
         toast = render_template("___toast.html", message="User unblocked")
         
+        email_body = f"""<h1>Account unblocked</h1>
+          <p>Hi {user_name}, your account has been unblocked. You can now login again.</p>"""
+        x.send_email(user_email, "Your account has been unblocked", email_body)
+
         # Return both templates with their targets
         return f"""
             <template mix-target='#unblock-{user_pk}' mix-replace>
@@ -762,6 +813,23 @@ def item_block(item_pk):
         }
 
         db, cursor = x.db()
+
+        
+
+        cursor.execute("""SELECT 
+                            items.*, 
+                            users.user_name,
+                            users.user_email  
+                        FROM 
+                            items 
+                        LEFT JOIN 
+                            users ON items.restaurant_fk = users.user_pk
+                        WHERE 
+                            items.item_pk = %s""", (item["item_pk"],))
+        user_data = cursor.fetchone()
+        user_email = user_data["user_email"]
+        user_name = user_data["user_name"]
+
         cursor.execute("""UPDATE items 
                       SET item_blocked_at = %s 
                       WHERE item_pk = %s 
@@ -777,6 +845,10 @@ def item_block(item_pk):
         btn_unblock = render_template("___btn_unblock_item.html", item=item)
         toast = render_template("___toast.html", message="Item blocked")
         
+        email_body = f"""<h1>Item blocked</h1>
+          <p>Hi {user_name}, your '{user_data["item_title"]}' menu item has been blocked. Please contact support if you have any questions.</p>"""
+        x.send_email(user_email, "Your item has been blocked", email_body)
+
         # Return both templates with their targets
         return f"""
             <template mix-target='#block-{item_pk}' mix-replace>
@@ -831,6 +903,21 @@ def item_unblock(item_pk):
         }
 
         db, cursor = x.db()
+
+        cursor.execute("""SELECT 
+                            items.*, 
+                            users.user_name,
+                            users.user_email  
+                        FROM 
+                            items 
+                        LEFT JOIN 
+                            users ON items.restaurant_fk = users.user_pk
+                        WHERE 
+                            items.item_pk = %s""", (item["item_pk"],))
+        user_data = cursor.fetchone()
+        user_email = user_data["user_email"]
+        user_name = user_data["user_name"]
+
         cursor.execute("""UPDATE items 
                       SET item_blocked_at = 0 
                       WHERE item_pk = %s 
@@ -846,6 +933,10 @@ def item_unblock(item_pk):
         btn_block = render_template("___btn_block_item.html", item=item)
         toast = render_template("___toast.html", message="Item unblocked")
         
+        email_body = f"""<h1>Item unblocked</h1>
+          <p>Hi {user_name}, your '{user_data["item_title"]}' menu item has been unblocked. It is now visible on your menu. Let us know if you have any questions.</p>"""
+        x.send_email(user_email, "Your item has been unblocked", email_body)
+
         # Return both templates with their targets
         return f"""
             <template mix-target='#unblock-{item_pk}' mix-replace>
