@@ -375,7 +375,8 @@ def login():
             "user_name": rows[0]["user_name"],
             "user_last_name": rows[0]["user_last_name"],
             "user_email": rows[0]["user_email"],
-            "roles": roles
+            "roles": roles,
+            "user_avatar": rows[0]["user_avatar"]
         }
         ic(user)
         session["user"] = user

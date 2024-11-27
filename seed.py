@@ -71,9 +71,9 @@ coords_list = [
 def insert_item(item):
     # Insert the item into the items table
     cursor.execute("""
-        INSERT INTO items (item_pk, restaurant_fk, title, price)
-        VALUES (%s, %s, %s, %s)
-    """, (item["item_pk"], item["restaurant_fk"], item["title"], item["price"]))
+        INSERT INTO items (item_pk, restaurant_fk, title, price, deleted_at, blocked_at)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (item["item_pk"], item["restaurant_fk"], item["title"], item["price"],item["deleted_at"],item["blocked_at"]))
 
 def insert_coords(coord):
     try:
@@ -156,6 +156,8 @@ try:
     restaurant_fk CHAR(36),
     title VARCHAR(50),
     price DECIMAL(5,2),
+    deleted_at INTEGER UNSIGNED,
+    blocked_at INTEGER UNSIGNED,
     PRIMARY KEY(item_pk),
     FOREIGN KEY(restaurant_fk) REFERENCES users(user_pk)
     );
@@ -399,13 +401,15 @@ try:
                     "item_pk": item_pk,
                     "restaurant_fk": user_pk,
                     "title": random.choice(food_names),
-                    "price": round(random.uniform(5, 30))  # Random price between 5 and 30
+                    "price": round(random.uniform(5, 30)),  # Random price between 5 and 30
+                    "deleted_at": 0,
+                    "blocked_at": 0
                 }
                 insert_item(item)
                 
 
 
-# Seed items only if the user is a restaurant
+# Seed coords only if the user is a restaurant
         if x.RESTAURANT_ROLE_PK:
                 coords_pk = str(uuid.uuid4())
                 coord = {
