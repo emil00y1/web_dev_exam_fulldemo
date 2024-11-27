@@ -172,8 +172,20 @@ def view_admin():
         db, cursor = x.db()
         cursor.execute("SELECT * FROM users")
         users = cursor.fetchall()
+        cursor.execute("""
+            SELECT 
+                items.*,
+                users.user_name as restaurant_name
+            FROM 
+                items 
+            LEFT JOIN 
+                users 
+            ON 
+                items.restaurant_fk = users.user_pk
+        """)
+        items = cursor.fetchall()
         
-        return render_template("view_admin.html", users=users, time=time, user=user)
+        return render_template("view_admin.html", users=users, time=time, user=user, items=items)
     finally:
         if 'cursor' in locals(): cursor.close()
         if 'db' in locals(): db.close()
@@ -226,13 +238,84 @@ def user_delete(user_pk):
         
         # Format the deleted_at date and create the replacement HTML
         formatted_date = time.strftime('%A, %d %B %Y', time.localtime(user["user_deleted_at"]))
-        deleted_html = f'<div class="text-c-white d-flex a-items-center">deleted at: {formatted_date}</div>'
+        deleted_html = f'<div class="d-flex a-items-center">deleted at: {formatted_date}</div>'
         
         toast = render_template("___toast.html", message="User deleted")
         
         # Return both the deleted_at text and toast
         return f"""
             <template mix-target='#actions-{user_pk}'>
+                {deleted_html}
+            </template>
+            <template mix-target="#toast" mix-bottom>
+                {toast}
+            </template>
+            """
+
+    except Exception as ex:
+        ic(ex)
+        if "db" in locals(): db.rollback()
+        
+        if isinstance(ex, x.CustomException):
+            toast = render_template("___toast.html", message=ex.message)
+            return f"""
+                <template mix-target="#toast" mix-bottom>
+                    {toast}
+                </template>
+                """, ex.code
+        
+        if isinstance(ex, x.mysql.connector.Error):
+            ic(ex)
+            toast = render_template("___toast.html", message="Database error")
+            return f"""
+                <template mix-target="#toast" mix-bottom>
+                    {toast}
+                </template>
+                """, 500
+        
+        toast = render_template("___toast.html", message="System under maintenance")
+        return f"""
+            <template mix-target="#toast" mix-bottom>
+                {toast}
+            </template>
+            """, 500
+
+    finally:
+        if "cursor" in locals(): cursor.close()
+        if "db" in locals(): db.close()
+
+##############################
+@app.get("/items/delete/<item_pk>")
+def item_delete(item_pk):
+    try:
+        if not "admin" in session.get("user", {}).get("roles", []): 
+            return redirect(url_for("view_login"))
+
+        item = {
+            "item_pk": x.validate_uuid4(item_pk),
+            "item_deleted_at": int(time.time())
+        }
+
+        db, cursor = x.db()
+        cursor.execute("""UPDATE items 
+                      SET item_deleted_at = %s 
+                      WHERE item_pk = %s""", 
+                      (item["item_deleted_at"], item["item_pk"]))
+        
+        if cursor.rowcount == 0:
+            x.raise_custom_exception("Item could not be deleted", 404)
+        
+        db.commit()
+        
+        # Format the deleted_at date and create the replacement HTML
+        formatted_date = time.strftime('%A, %d %B %Y', time.localtime(item["item_deleted_at"]))
+        deleted_html = f'<div class="d-flex a-items-center">deleted at: {formatted_date}</div>'
+        
+        toast = render_template("___toast.html", message="Item deleted")
+        
+        # Return both the deleted_at text and toast
+        return f"""
+            <template mix-target='#actions-{item_pk}'>
                 {deleted_html}
             </template>
             <template mix-target="#toast" mix-bottom>
@@ -617,6 +700,146 @@ def user_unblock(user_pk):
         # Return both templates with their targets
         return f"""
             <template mix-target='#unblock-{user_pk}' mix-replace>
+                {btn_block}
+            </template>
+            <template mix-target="#toast" mix-bottom>
+                {toast}
+            </template>
+            """
+
+    except Exception as ex:
+        ic(ex)
+        if "db" in locals(): db.rollback()
+        
+        if isinstance(ex, x.CustomException):
+            toast = render_template("___toast.html", message=ex.message)
+            return f"""
+                <template mix-target="#toast" mix-bottom>
+                    {toast}
+                </template>
+                """, ex.code
+        
+        if isinstance(ex, x.mysql.connector.Error):
+            ic(ex)
+            toast = render_template("___toast.html", message="Database error")
+            return f"""
+                <template mix-target="#toast" mix-bottom>
+                    {toast}
+                </template>
+                """, 500
+        
+        toast = render_template("___toast.html", message="System under maintenance")
+        return f"""
+            <template mix-target="#toast" mix-bottom>
+                {toast}
+            </template>
+            """, 500
+
+    finally:
+        if "cursor" in locals(): cursor.close()
+        if "db" in locals(): db.close()
+
+
+##############################
+@app.get("/items/block/<item_pk>")
+def item_block(item_pk):
+    try:
+        if not "admin" in session.get("user", {}).get("roles", []): 
+            return redirect(url_for("view_login"))
+
+        item = {
+            "item_pk": x.validate_uuid4(item_pk),
+            "item_blocked_at": int(time.time())
+        }
+
+        db, cursor = x.db()
+        cursor.execute("""UPDATE items 
+                      SET item_blocked_at = %s 
+                      WHERE item_pk = %s 
+                      AND item_blocked_at = 0""", 
+                      (item["item_blocked_at"], item["item_pk"]))
+        
+        if cursor.rowcount == 0:
+            x.raise_custom_exception("Item could not be blocked", 404)
+        
+        db.commit()
+        
+        # Render both templates
+        btn_unblock = render_template("___btn_unblock_item.html", item=item)
+        toast = render_template("___toast.html", message="Item blocked")
+        
+        # Return both templates with their targets
+        return f"""
+            <template mix-target='#block-{item_pk}' mix-replace>
+                {btn_unblock}
+            </template>
+            <template mix-target="#toast" mix-bottom>
+                {toast}
+            </template>
+            """
+
+    except Exception as ex:
+        ic(ex)
+        if "db" in locals(): db.rollback()
+        
+        if isinstance(ex, x.CustomException):
+            toast = render_template("___toast.html", message=ex.message)
+            return f"""
+                <template mix-target="#toast" mix-bottom>
+                    {toast}
+                </template>
+                """, ex.code
+        
+        if isinstance(ex, x.mysql.connector.Error):
+            ic(ex)
+            toast = render_template("___toast.html", message="Database error")
+            return f"""
+                <template mix-target="#toast" mix-bottom>
+                    {toast}
+                </template>
+                """, 500
+        
+        toast = render_template("___toast.html", message="System under maintenance")
+        return f"""
+            <template mix-target="#toast" mix-bottom>
+                {toast}
+            </template>
+            """, 500
+
+    finally:
+        if "cursor" in locals(): cursor.close()
+        if "db" in locals(): db.close()
+
+##############################
+@app.get("/items/unblock/<item_pk>")
+def item_unblock(item_pk):
+    try:
+        if not "admin" in session.get("user", {}).get("roles", []): 
+            return redirect(url_for("view_login"))
+
+        item = {
+            "item_pk": x.validate_uuid4(item_pk)
+        }
+
+        db, cursor = x.db()
+        cursor.execute("""UPDATE items 
+                      SET item_blocked_at = 0 
+                      WHERE item_pk = %s 
+                      AND item_blocked_at != 0""", 
+                      (item["item_pk"],))
+        
+        if cursor.rowcount == 0:
+            x.raise_custom_exception("Item could not be unblocked", 404)
+        
+        db.commit()
+        
+        # Render both templates
+        btn_block = render_template("___btn_block_item.html", item=item)
+        toast = render_template("___toast.html", message="Item unblocked")
+        
+        # Return both templates with their targets
+        return f"""
+            <template mix-target='#unblock-{item_pk}' mix-replace>
                 {btn_block}
             </template>
             <template mix-target="#toast" mix-bottom>

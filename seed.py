@@ -71,9 +71,9 @@ coords_list = [
 def insert_item(item):
     # Insert the item into the items table
     cursor.execute("""
-        INSERT INTO items (item_pk, restaurant_fk, title, price, deleted_at, blocked_at)
+        INSERT INTO items (item_pk, restaurant_fk, item_title, item_price, item_deleted_at, item_blocked_at)
         VALUES (%s, %s, %s, %s, %s, %s)
-    """, (item["item_pk"], item["restaurant_fk"], item["title"], item["price"],item["deleted_at"],item["blocked_at"]))
+    """, (item["item_pk"], item["restaurant_fk"], item["item_title"], item["item_price"],item["item_deleted_at"],item["item_blocked_at"]))
 
 def insert_coords(coord):
     try:
@@ -154,10 +154,10 @@ try:
         CREATE TABLE items (
     item_pk CHAR(36),
     restaurant_fk CHAR(36),
-    title VARCHAR(50),
-    price DECIMAL(5,2),
-    deleted_at INTEGER UNSIGNED,
-    blocked_at INTEGER UNSIGNED,
+    item_title VARCHAR(50),
+    item_price DECIMAL(5,2),
+    item_deleted_at INTEGER UNSIGNED,
+    item_blocked_at INTEGER UNSIGNED,
     PRIMARY KEY(item_pk),
     FOREIGN KEY(restaurant_fk) REFERENCES users(user_pk)
     );
@@ -400,10 +400,10 @@ try:
                 item = {
                     "item_pk": item_pk,
                     "restaurant_fk": user_pk,
-                    "title": random.choice(food_names),
-                    "price": round(random.uniform(5, 30)),  # Random price between 5 and 30
-                    "deleted_at": 0,
-                    "blocked_at": 0
+                    "item_title": random.choice(food_names),
+                    "item_price": round(random.uniform(5, 30)),  # Random price between 5 and 30
+                    "item_deleted_at": 0,
+                    "item_blocked_at": 0
                 }
                 insert_item(item)
                 

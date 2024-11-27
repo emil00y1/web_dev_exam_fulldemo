@@ -1,52 +1,131 @@
 
 {% include "_top_logged.html" %} 
 <main class="mx-8">
-    <div>
-        <h1>Admin Dashboard</h1>
-        <div class="d-flex flex-col ">
-            <h2>All users</h2>
-           <section class="rounded-sm">
-                <div
-                    class="d-flex py-4 a-content-center p-content-center bg-c-charocoal:-4 text-c-white:-6 border-b-1 text-110">
-                    <div class="px-6 flex-1 text-w-medium">First Name</div>
-                    <div class="px-6 flex-1 text-w-medium">Email</div>
-                </div>
-                <div id="users">
-                    {% for user in users %}
-                        <article id="u{{ user['user_pk'] }}" class="d-flex px-4 a-content-center p-content-center min-h-14 bg-c-white:-8
-                            {% if loop.index is odd %}bg-c-white:-2{% endif %}">
-                            
-                            <div class="py-1 flex-1 text-sm a-content-center text-100">
-                                {{ user["user_name"] }}
-                            </div>
-                            <div class="py-1 flex-1 text-sm a-content-center text-100">
-                                {{ user["user_email"] }}
-                            </div>
-                           <div class="py-1 flex-1 d-flex j-content-end a-items-center" id="actions-{{user['user_pk']}}">
-                                {% if user["user_deleted_at"] == 0 %}
-                                    {% if user["user_blocked_at"] == 0 %}
-                                        {% include "___btn_block_user.html" %}
-                                    {% else %}
-                                        {% include "___btn_unblock_user.html" %}
-                                    {% endif %}
-                                {% endif %}
-    
-                                {% if user["user_deleted_at"] == 0 %}
-                                    <button class="bg-none px-3 py-1 rounded-sm cursor-pointe text-100r"
-                                        title="Delete User" mix-get="/users/delete/{{user['user_pk']}}">
-                                        Delete user
-                                    </button>
-                                {% else %}
-                                    {% set user_deleted_at = time.localtime(user['user_deleted_at'])|strftime('%A, %d %B %Y') %}
-                                    <div class="d-flex a-items-center text-100">deleted at: {{ user_deleted_at }}</div>
-                                {% endif %}
-                            </div>
-                        </article>
-                    {% endfor %}
-                </div>
-           </section>
+    <div class="d-flex flex-col">
+        <h1 class="mb-8">Admin Dashboard</h1>
+        <div class="d-grid cols-2 mb-4">
+            <button onclick="showTab('users-tab')" class="px-6 py-2 rounded-(0) rounded-l-md cursor-pointer text-110 bg-c-white:-8 text-c-charocoal">
+                Users
+            </button>
+            <button onclick="showTab('items-tab')" class="px-6 py-2 rounded-(0) rounded-r-md cursor-pointer text-110 bg-c-white:-8 text-c-charocoal">
+                Items
+            </button>
+        </div>
+        <div class="mt-8">
+            <section id="users-tab" class="d-flex flex-col" >
+                    <h2>All users</h2>
+                   <section class="rounded-sm ">
+                        <div class="d-grid cols-3 py-5 px-6 a-content-center p-content-center bg-c-charocoal:-4 text-c-white:-6 border-b-1 text-110 rounded-t-md">
+                            <div class="flex-1 text-w-medium">First Name</div>
+                            <div class="flex-1 text-w-medium">Email</div>
+                        </div>
+                        <div id="users">
+                            {% for user in users %}
+                                <article id="u{{ user['user_pk'] }}" class="d-flex px-6 a-content-center p-content-center min-h-14 bg-c-white:-8
+                                    {% if loop.index is odd %}bg-c-white:-2{% endif %}">
+                                    
+                                    <div class="py-1 flex-1 text-sm a-content-center text-100">
+                                        {{ user["user_name"] }}
+                                    </div>
+                                    <div class="py-1 flex-1 text-sm a-content-center text-100">
+                                        {{ user["user_email"] }}
+                                    </div>
+                                   <div class="py-1 flex-1 d-flex j-content-end a-items-center" id="actions-{{user['user_pk']}}">
+                                        {% if user["user_deleted_at"] == 0 %}
+                                            {% if user["user_blocked_at"] == 0 %}
+                                                {% include "___btn_block_user.html" %}
+                                            {% else %}
+                                                {% include "___btn_unblock_user.html" %}
+                                            {% endif %}
+                                        {% endif %}
+            
+                                        {% if user["user_deleted_at"] == 0 %}
+                                            <button class="bg-none px-3 py-1 rounded-sm cursor-pointer text-100"
+                                                title="Delete User" mix-get="/users/delete/{{user['user_pk']}}">
+                                                Delete user
+                                            </button>
+                                        {% else %}
+                                            {% set user_deleted_at = time.localtime(user['user_deleted_at'])|strftime('%A, %d %B %Y') %}
+                                            <div class="d-flex a-items-center text-100">deleted at: {{ user_deleted_at }}</div>
+                                        {% endif %}
+                                    </div>
+                                </article>
+                            {% endfor %}
+                        </div>
+                   </section>
+            </section>
+            <section id="items-tab" class="d-none flex-col">
+                    <h2>All items</h2>
+                   <section class="rounded-sm ">
+                        <div class="d-grid cols-4 px-6 py-5 a-content-center p-content-center bg-c-charocoal:-4 text-c-white:-6 border-b-1 text-110 rounded-t-md">
+                            <div class="flex-1 text-w-medium">Item name</div>
+                            <div class="flex-1 text-w-medium">Restaurant name</div>
+                            <div class="flex-1 text-w-medium">Price</div>
+                        </div>
+                        <div id="items">
+                            {% for item in items %}
+                                <article id="u{{ item['item_pk'] }}" class="d-flex px-6 a-content-center p-content-center min-h-14 bg-c-white:-8
+                                    {% if loop.index is odd %}bg-c-white:-2{% endif %}">
+                                    
+                                    <div class="py-1 flex-1 text-sm a-content-center text-100">
+                                        {{ item["item_title"] }}
+                                    </div>
+                                    <div class="py-1 flex-1 text-sm a-content-center text-100">
+                                        {{ item["restaurant_name"] }}
+                                    </div>
+                                    <div class="py-1 flex-1 text-sm a-content-center text-100">
+                                        {{ item["item_price"] }}
+                                    </div>
+                                   <div class="py-1 flex-1 d-flex j-content-end a-items-center" id="actions-{{item['item_pk']}}">
+                                        {% if item["item_deleted_at"] == 0 %}
+                                            {% if item["item_blocked_at"] == 0 %}
+                                                {% include "___btn_block_item.html" %}
+                                            {% else %}
+                                                {% include "___btn_unblock_item.html" %}
+                                            {% endif %}
+                                        {% endif %}
+            
+                                        {% if item["item_deleted_at"] == 0 %}
+                                            <button class="bg-none px-3 py-1 rounded-sm cursor-pointer text-100"
+                                                title="Delete Item" mix-get="/items/delete/{{item['item_pk']}}">
+                                                Delete item
+                                            </button>
+                                        {% else %}
+                                            {% set item_deleted_at = time.localtime(item['item_deleted_at'])|strftime('%A, %d %B %Y') %}
+                                            <div class="d-flex a-items-center text-100">deleted at: {{ item_deleted_at }}</div>
+                                        {% endif %}
+                                    </div>
+                                </article>
+                            {% endfor %}
+                        </div>
+                   </section>
+            </section>
         </div>
     </div>
 </main>
  
+<script>
+function showTab(tabId) {
+    console.log("test tabs")
+    // Hide all tabs
+    document.getElementById('users-tab').classList.add("d-none");
+    document.getElementById('items-tab').classList.add("d-none");
+    
+    // Show selected tab
+    document.getElementById(tabId).classList.add('d-flex') ;
+    document.getElementById(tabId).classList.remove('d-none');
+    
+    // Update active tab button styling
+    const buttons = document.querySelectorAll('.tab-button');
+    document.querySelectorAll('button[onclick^="showTab"]').forEach(btn => {
+       btn.classList.remove('bg-c-tealblue:-8', 'text-w-semibold', 'text-c-white:-6');
+    });
+    document.querySelector(`button[onclick*="${tabId}"]`).classList.add('bg-c-tealblue:-8', 'text-w-semibold', 'text-c-white:-6');
+
+}
+
+// Show users tab by default
+showTab('users-tab');
+</script>
+
  {% include "_bottom.html" %}
