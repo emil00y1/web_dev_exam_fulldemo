@@ -245,7 +245,7 @@ def user_delete(user_pk):
         
         # Format the deleted_at date and create the replacement HTML
         formatted_date = time.strftime('%A, %d %B %Y', time.localtime(user["user_deleted_at"]))
-        deleted_html = f'<div class="d-flex a-items-center">deleted at: {formatted_date}</div>'
+        deleted_html = f'<div class="d-flex a-items-center text-c-red:-14">Deleted: {formatted_date}</div>'
         
         toast = render_template("___toast.html", message="User deleted")
         
@@ -316,7 +316,7 @@ def item_delete(item_pk):
         
         # Format the deleted_at date and create the replacement HTML
         formatted_date = time.strftime('%A, %d %B %Y', time.localtime(item["item_deleted_at"]))
-        deleted_html = f'<div class="d-flex a-items-center">deleted at: {formatted_date}</div>'
+        deleted_html = f'<div class="d-flex a-items-center text-c-red:-14">Deleted: {formatted_date}</div>'
         
         toast = render_template("___toast.html", message="Item deleted")
         
