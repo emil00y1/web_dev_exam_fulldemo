@@ -1,6 +1,6 @@
 
 {% include "_top_logged.html" %} 
-<main class="mx-4">
+<main class="mx-4" md="mx-6" lg="mx-8">
     <div class="d-flex flex-col">
         <h1 class="mb-8">Admin Dashboard</h1>
         <div class="d-grid cols-2 mb-4">
@@ -13,11 +13,12 @@
         </div>
         <div class="mt-8">
             <section id="users-tab" class="d-flex flex-col" >
-                    <h2>All users</h2>
-                   <section class="rounded-sm ">
-                        <div class="d-grid cols-5 gap-2 py-5 px-6 a-content-center p-content-center bg-c-charocoal:-4 text-c-white:-6 border-b-1 text-110 rounded-t-md">
-                            <div class="flex-1 text-w-medium">First Name</div>
-                            <div class="flex-1 text-w-medium">Email</div>
+                    <h2 class="d-none" md="d-block">All users</h2>
+                    <section class="rounded-sm ">
+                        <div class="py-5 px-6 a-content-center p-content-center bg-c-charocoal:-4 text-c-white:-6 border-b-1 text-110 rounded-t-md" md="d-grid cols-5 gap-2 ">
+                            <h2 class="text-w-medium mb-0" md="d-none">All users</h2>
+                            <div class="flex-1 text-w-medium d-none" md="d-block">First Name</div>
+                            <div class="flex-1 text-w-medium d-none" md="d-block">Email</div>
                         </div>
                         <div id="users">
                             {% for user in users %}
@@ -57,12 +58,13 @@
                    </section>
             </section>
             <section id="items-tab" class="d-none flex-col">
-                    <h2>All items</h2>
+                    <h2 class="d-none" md="d-block">All items</h2>
                     <section class="rounded-sm ">
-                        <div class="d-grid cols-5 gap-2 px-6 py-5 a-content-center p-content-center bg-c-charocoal:-4 text-c-white:-6 border-b-1 text-110 rounded-t-md">
-                            <div class="flex-1 text-w-medium">Item</div>
-                            <div class="flex-1 text-w-medium">Restaurant</div>
-                            <div class="flex-1 text-w-medium">Price</div>
+                        <div class=" px-6 py-5 a-content-center p-content-center bg-c-charocoal:-4 text-c-white:-6 border-b-1 text-110 rounded-t-md" md="d-grid cols-5 gap-2">
+                            <h2 class="text-w-medium mb-0" md="d-none">All items</h2>
+                            <div class="text-w-medium d-none" md="d-block">Item</div>
+                            <div class="text-w-medium d-none" md="d-block">Restaurant</div>
+                            <div class="text-w-medium d-none" md="d-block">Price</div>
                         </div>
                         <div id="items">
                             {% for item in items %}
