@@ -1,4 +1,9 @@
-{% include "_top.html" %}
+{% if user %}
+    {% include "_top_logged.html" %}
+{% else %}
+    {% include "_top.html" %}
+{% endif %}
+
 
 <main class="w-full d-flex">
     <div id="map" class="w-full h-100vh"></div>
@@ -9,6 +14,7 @@
         >
             More
         </button>
+        <p> {{ user }}</p>
         <p>{{ coords }}</p>
     
     </div>
