@@ -18,6 +18,8 @@ Session(app)
 @app.template_filter('strftime')
 def strftime_filter(timestamp, format='%A, %d %B %Y'):
     return time.strftime(format, timestamp)
+
+
 # app.secret_key = "your_secret_key"
 
 ##############################

@@ -123,9 +123,9 @@ function showTab(tabId) {
     // Update active tab button styling
     const buttons = document.querySelectorAll('.tab-button');
     document.querySelectorAll('button[onclick^="showTab"]').forEach(btn => {
-       btn.classList.remove('bg-c-tealblue:-8', 'text-w-semibold', 'text-c-white:-6');
+       btn.classList.remove('bg-c-tealblue:-6', 'text-w-semibold', 'text-c-white:-6');
     });
-    document.querySelector(`button[onclick*="${tabId}"]`).classList.add('bg-c-tealblue:-8', 'text-w-semibold', 'text-c-white:-6');
+    document.querySelector(`button[onclick*="${tabId}"]`).classList.add('bg-c-tealblue:-6', 'text-w-semibold', 'text-c-white:-6');
 
 }
 

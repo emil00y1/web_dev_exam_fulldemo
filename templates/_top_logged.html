@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='mixhtml.css') }}">
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="{{url_for('static', filename='app.js')}}" defer></script>
     <script src="https://unpkg.com/mojocss"></script>
     <title>Company</title>
 </head>
@@ -16,13 +17,17 @@
                 <a href="/" class="no-u-hover text-c-black">Company</a>
             </div>
             
+
             <!-- Avatar and Logout -->
             <div class="d-flex a-items-center gap-4">
+                {% if "admin" in user.get("roles", "") %}
+                    <a href="admin" class="text-c-tealblue:-6 py-2 px-1">Dashboard</a>
+                {% endif %}
                 <a href="profile" class="d-flex a-items-center">
                     <img src="{{ url_for('static', filename='avatars/' + user['user_avatar']) if user['user_avatar'] else url_for('static', filename='avatars/profile_1.jpg') }}" alt="User Avatar" class="w-12 h-12 rounded-full">
                 </a>
                 <form method="POST" action="{{ url_for('logout') }}">
-                    <button class="text-c-white bg-c-tealblue:-5 cursor-pointer p-3 px-5" hover="bg-c-tealblue:-8">
+                    <button class="text-c-white bg-c-tealblue:-5 cursor-pointer px-5" hover="bg-c-tealblue:-8">
                         Logout
                     </button>
                 </form>
