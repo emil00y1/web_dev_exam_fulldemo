@@ -15,8 +15,11 @@
             More
         </button>
         <p> {{ user }}</p>
-        <p>{{ coords }}</p>
+        {% for coord in coords %}
+        <p>{{ coord["coordinates"] }}</p>
+    {% endfor %}
     
+
     </div>
 </main>
 <script>

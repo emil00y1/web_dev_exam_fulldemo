@@ -54,8 +54,12 @@ def view_test_get_redis():
 def view_index():
     try:
         db, cursor = x.db()
-        # Query to fetch all rows from the coords table
-        q = """SELECT * FROM coords"""
+        # Query to fetch all rows from the coords table and the corresponding user_name
+        q = """
+        SELECT c.coords_pk, c.coordinates, c.restaurant_fk, u.user_name 
+        FROM coords c
+        JOIN users u ON c.restaurant_fk = u.user_pk
+        """
         cursor.execute(q)
         rows = cursor.fetchall()
         
@@ -68,7 +72,8 @@ def view_index():
             {
                 "coords_pk": row["coords_pk"],
                 "coordinates": row["coordinates"],
-                "restaurant_fk": row["restaurant_fk"]
+                "restaurant_fk": row["restaurant_fk"],
+                "user_name": row["user_name"]  # Add user_name here
             }
             for row in rows
         ]
@@ -79,6 +84,8 @@ def view_index():
         
         # Pass all coordinates to the template
         return render_template("view_index.html", coords=coords, user=user)
+
+
     except Exception as ex:
         ic(ex)
         if "db" in locals(): db.rollback()
