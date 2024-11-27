@@ -173,7 +173,7 @@ def view_admin():
         cursor.execute("SELECT * FROM users")
         users = cursor.fetchall()
         
-        return render_template("view_admin.html", users=users, time=time)
+        return render_template("view_admin.html", users=users, time=time, user=user)
     finally:
         if 'cursor' in locals(): cursor.close()
         if 'db' in locals(): db.close()
