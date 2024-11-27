@@ -11,20 +11,25 @@
 <body class="w-full h-100vh text-c-gray:-16">
     <header class="bg-c-white pa-6 mb-6 shadow-sm">
         <nav class="d-flex j-content-between a-items-center w-full max-w-1200 mx-auto">
+            <!-- Logo -->
             <div class="text-c-black text-bold text-xl">
                 <a href="/" class="no-u-hover text-c-black">Company</a>
             </div>
-            <div>
-                <a href="profile.html"><img src='/images/{{ user["user_avatar"] }}' alt=""></a>
+            
+            <!-- Avatar and Logout -->
+            <div class="d-flex a-items-center gap-4">
+                <a href="profile">
+                    <img src="{{ url_for('static', filename='avatars/' + user['user_avatar']) }}" alt="User Avatar" class="w-12 h-12 rounded-full">
+                </a>
+                <form method="POST" action="{{ url_for('logout') }}">
+                    <button class="text-c-white bg-c-tealblue:-5 cursor-pointer p-3 px-5" hover="bg-c-tealblue:-8">
+                        Logout
+                    </button>
+                </form>
             </div>
-            <form method="POST" action="{{ url_for('logout') }}">
-                <button class="text-c-white bg-c-tealblue:-5 cursor-pointer p-3 px-5" hover="bg-c-tealblue:-8">
-                    Logout
-                </button>
-            </form>
         </nav>
     </header>
 
     <div id="toast" class="d-flex flex-col j-content-center p-fixed w-full top-4 z-10"></div>
-
-
+</body>
+</html>
