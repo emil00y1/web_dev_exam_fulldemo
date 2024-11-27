@@ -30,13 +30,34 @@
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map);
 
-    function test(){
+    // function test(){
+    //     var markerLocations = [
+    //     { coords: [51.5, -0.09], popup: "Marker 1: London" },
+    //     { coords: [48.8566, 2.3522], popup: "Marker 2: Paris" },
+    //     { coords: [40.7128, -74.0060], popup: "Marker 3: New York" },
+    //     { coords: [55.6845, 12.564148], popup: "Marker 4: Tokyo" }
+    //     ];
+
+    //     // Loop through the markerLocations array and add markers to the map
+    //     markerLocations.forEach(function(location) {
+    //         var marker = L.marker(location.coords).addTo(map);
+    //         marker.bindPopup(location.popup);
+    //     });
+    // }
+
+    function test() {
+        // Dynamically populate markerLocations with data from Python
         var markerLocations = [
-        { coords: [51.5, -0.09], popup: "Marker 1: London" },
-        { coords: [48.8566, 2.3522], popup: "Marker 2: Paris" },
-        { coords: [40.7128, -74.0060], popup: "Marker 3: New York" },
-        { coords: [55.6845, 12.564148], popup: "Marker 4: Tokyo" }
+            {% for coord in coords %}
+            { 
+                coords: {{ coord["coordinates"] }}, 
+                popup: "Restaurant: {{ coord['user_name'] }}"  // Show user_name in the popup
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
         ];
+
+        // Log marker locations to verify data
+        console.log(markerLocations);
 
         // Loop through the markerLocations array and add markers to the map
         markerLocations.forEach(function(location) {
@@ -44,6 +65,8 @@
             marker.bindPopup(location.popup);
         });
     }
+
+
 
     setTimeout(test, 3000)
     
