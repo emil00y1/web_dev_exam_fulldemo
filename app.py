@@ -80,6 +80,7 @@ def view_index():
             {
                 "coords_pk": row["coords_pk"],
                 "coordinates": row["coordinates"],
+                "restaurant_fk": row["restaurant_fk"],
                 "user_name": row["user_name"],
                 "user_avatar": row["user_avatar"],
             }
