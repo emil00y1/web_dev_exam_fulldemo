@@ -52,41 +52,44 @@ def view_test_get_redis():
 
 ##############################
 @app.get("/")
-@x.no_cache
 def view_index():
     try:
+        page = request.args.get("page", default=1, type=int)
+        per_page = 7
+        offset = (page - 1) * per_page
+
         db, cursor = x.db()
-        # Query to fetch all rows from the coords table and the corresponding user_name
-        q = """
-        SELECT c.coords_pk, c.coordinates, c.restaurant_fk, u.user_name 
-        FROM coords c
-        JOIN users u ON c.restaurant_fk = u.user_pk
-        """
-        cursor.execute(q)
+        q = """SELECT coords.*, users.user_name, users.user_avatar 
+               FROM coords 
+               JOIN users ON coords.restaurant_fk = users.user_pk
+               LIMIT %s OFFSET %s"""
+        cursor.execute(q, (per_page, offset))
         rows = cursor.fetchall()
-        
-        if not rows:
-            toast = render_template("___toast.html", message="No coordinates found")
-            return f"""<template mix-target="#toast">{toast}</template>""", 400
-        
-        # Convert rows into a list of dictionaries
+
+        # Fetch total count of restaurants for pagination
+        cursor.execute("SELECT COUNT(*) AS total FROM coords")
+        total = cursor.fetchone()["total"]
+
+        # Determine next and previous page numbers
+        next_page = page + 1 if offset + per_page < total else None
+        prev_page = page - 1 if page > 1 else None
+
         coords = [
             {
                 "coords_pk": row["coords_pk"],
                 "coordinates": row["coordinates"],
-                "restaurant_fk": row["restaurant_fk"],
-                "user_name": row["user_name"]  # Add user_name here
+                "user_name": row["user_name"],
+                "user_avatar": row["user_avatar"],
             }
             for row in rows
         ]
-        
-        # Store all coordinates in the session (if needed)
-        session["coords"] = coords
-        user = session.get("user", "")
-        
-        # Pass all coordinates to the template
-        return render_template("view_index.html", coords=coords, user=user)
 
+        return render_template(
+            "view_index.html",
+            coords=coords,
+            next_page=next_page,
+            prev_page=prev_page,
+        )
 
     except Exception as ex:
         ic(ex)
