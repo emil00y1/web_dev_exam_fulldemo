@@ -32,13 +32,13 @@ def optimize_image(file):
             image = background
         
         # Resize if needed
-        max_size = (800, 800)
+        max_size = (500, 500)
         if image.size[0] > max_size[0] or image.size[1] > max_size[1]:
             image.thumbnail(max_size, Image.Resampling.LANCZOS)
         
         # Save as WebP
         output = io.BytesIO()
-        image.save(output, format='WebP', quality=85, optimize=True)
+        image.save(output, format='WebP', quality=90, optimize=True)
         output.seek(0)
         print("Image optimization complete")  # Debug log
         return output
@@ -247,10 +247,10 @@ def view_admin():
 @app.get("/profile")
 @x.no_cache
 def show_profile():
-    user = session.get("user", "")
-    avatars = get_user_avatars(session['user']['user_pk'])
+    user = session.get("user")
     if not user:
         return redirect(url_for("view_login"))
+    avatars = get_user_avatars(session['user']['user_pk'])
     return render_template("view_profile.html",x=x, user=user, avatars=avatars)
 
 
