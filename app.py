@@ -131,20 +131,23 @@ def view_signup():
 @app.get("/login")
 @x.no_cache
 def view_login():  
-    # ic("#"*20, "VIEW_LOGIN")
-    ic(session)
-    # print(session, flush=True)  
     if session.get("user"):
-        if len(session.get("user").get("roles")) > 1:
-            return redirect(url_for("view_choose_role")) 
-        if "admin" in session.get("user").get("roles"):
-            return redirect(url_for("view_admin"))
-        if "customer" in session.get("user").get("roles"):
-            return redirect(url_for("view_customer")) 
-        if "partner" in session.get("user").get("roles"):
-            return redirect(url_for("view_partner"))         
-    return render_template("view_login.html", x=x, title="Login", message=request.args.get("message", ""))
-
+        return redirect(url_for("profile"))
+    
+    messages = {
+        "verify_email": "Account created! Please check your email to verify your account",
+        "verified": "Email verified successfully! Please log in"
+    }
+    
+    msg = request.args.get("msg")
+    display_message = messages.get(msg, "")
+    
+    return render_template(
+        "view_login.html", 
+        x=x, 
+        title="Login", 
+        message=display_message
+    )
 
 ##############################
 @app.get("/customer")
@@ -497,8 +500,9 @@ def signup():
         email_body = f"""To verify your account, please <a href="http://127.0.0.1/verify/{user_verification_key}">click here</a>"""
         x.send_email(user_email, "Please verify your account", email_body)
         db.commit()
-    
-        return """<template mix-redirect="/login"></template>""", 201
+
+
+        return """<template mix-redirect="/login?msg=verify_email"></template>""", 201
     
     except Exception as ex:
         ic(ex)
@@ -1069,7 +1073,7 @@ def verify_user(verification_key):
         cursor.execute(q, (user_verified_at, verification_key))
         if cursor.rowcount != 1: x.raise_custom_exception("cannot verify account", 400)
         db.commit()
-        return redirect(url_for("view_login", message="User verified, please login"))
+        return redirect(url_for("view_login", msg="verified"))
 
     except Exception as ex:
         ic(ex)
