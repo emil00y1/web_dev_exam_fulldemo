@@ -1,37 +1,38 @@
 
 {% include "_top.html" %}
 
-<main class="w-full h-80vh d-flex p-items-center">
+<main class="mx-4 mb-8 h-full" md="mx-6" lg="mx-8">
 
+    <section class="mx-auto max-w-100 pb-16" sm="mt-8" md="d-flex flex-col h-full j-content-center">
+        <h1 class="mb-8">Login</h1>
+        <form id="frm_user_login" class="d-flex flex-col gap-4 ">    
+            <p class="text-c-green text-110 text-w-semibold {% if not message %}d-none{% endif %}">
+                {{ message }}
+            </p>
+            
+            <div class="d-flex flex-col">
+                <label for="user_email">
+                    <span>E-mail</span>
+                </label>
+                <input name="user_email" id="user_email" type="text" mix-check="{{ x.REGEX_EMAIL }}">
+            </div>
     
-    <form id="frm_user_login" class="w-25% d-flex flex-col gap-4 mx-auto">
-        
-        <div class="text-c-green text-200">
-            {{ message }}
-        </div>
-        
-        <div class="d-flex flex-col">
-            <label for="user_email">
-                <span>E-mail</span>
-            </label>
-            <input name="user_email" type="text" mix-check="{{ x.REGEX_EMAIL }}">
-        </div>
-
-        <div class="d-flex flex-col">
-            <label for="user_password" class="d-flex">
-                <span>Password</span>
-                <span class="ml-auto text-c-gray:+25">{{ x.USER_PASSWORD_MIN }} to {{ x.USER_PASSWORD_MAX }} chars</span>
-            </label>
-            <input name="user_password" type="text" mix-check="{{ x.REGEX_USER_PASSWORD }}">
-        </div>
-
-        <button mix-post="/login" mix-data="#frm_user_login" class="text-c-white bg-c-tealblue:-5 cursor-pointer py-3 px-5 rounded-sm" hover="bg-c-tealblue:-8">
-            Login
-        </button>
-
-        <p>Don't have an account? | <a href="{{url_for('view_signup')}}" class="text-a-center text-c-black text-d-underline">Signup</a></p>
-
-    </form>
+            <div class="d-flex flex-col">
+                <label for="user_password" class="d-flex">
+                    <span>Password</span>
+                    <span class="ml-auto text-c-gray:+25">{{ x.USER_PASSWORD_MIN }} to {{ x.USER_PASSWORD_MAX }} chars</span>
+                </label>
+                <input name="user_password" id="user_password" type="text" mix-check="{{ x.REGEX_USER_PASSWORD }}">
+            </div>
+    
+            <button mix-post="/login" mix-data="#frm_user_login" class="text-c-white bg-c-tealblue:-5 cursor-pointer py-3 px-5 rounded-sm" hover="bg-c-tealblue:-8">
+                Login
+            </button>
+    
+            <p>Don't have an account? | <a href="{{url_for('view_signup')}}" class="text-a-center text-c-black text-d-underline">Signup</a></p>
+    
+        </form>
+    </section>
 
 </main>
 
