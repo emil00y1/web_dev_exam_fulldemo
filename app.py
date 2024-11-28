@@ -2,11 +2,12 @@ from flask import Flask, session, render_template, redirect, url_for, make_respo
 from flask_session import Session
 from werkzeug.security import generate_password_hash
 from werkzeug.security import check_password_hash
+from PIL import Image
 import x
 import uuid 
 import time
 import redis
-import os
+import os, io
 
 from icecream import ic
 ic.configureOutput(prefix=f'***** | ', includeContext=True)
@@ -18,6 +19,33 @@ Session(app)
 @app.template_filter('strftime')
 def strftime_filter(timestamp, format='%A, %d %B %Y'):
     return time.strftime(format, timestamp)
+
+def optimize_image(file):
+    try:
+        print("Starting image optimization")  # Debug log
+        image = Image.open(file)
+        
+        # Convert to RGB if necessary
+        if image.mode in ('RGBA', 'LA'):
+            background = Image.new('RGB', image.size, (255, 255, 255))
+            background.paste(image, mask=image.split()[-1])
+            image = background
+        
+        # Resize if needed
+        max_size = (800, 800)
+        if image.size[0] > max_size[0] or image.size[1] > max_size[1]:
+            image.thumbnail(max_size, Image.Resampling.LANCZOS)
+        
+        # Save as WebP
+        output = io.BytesIO()
+        image.save(output, format='WebP', quality=85, optimize=True)
+        output.seek(0)
+        print("Image optimization complete")  # Debug log
+        return output
+    except Exception as e:
+        print(f"Error in optimize_image: {str(e)}")  # Debug log
+        raise e
+
 
 
 # app.secret_key = "your_secret_key"
@@ -586,45 +614,6 @@ def _________PUT_________(): pass
 ##############################
 ##############################
 
-# @app.put("/users")
-# def user_update():
-#     print("update")
-#     try:
-#         if not session.get("user"): x.raise_custom_exception("please login", 401)
-
-#         user_pk = session.get("user").get("user_pk")
-#         user_name = x.validate_user_name()
-#         user_last_name = x.validate_user_last_name()
-#         user_email = x.validate_user_email()
-
-#         user_updated_at = int(time.time())
-
-#         db, cursor = x.db()
-#         q = """ UPDATE users
-#                 SET user_name = %s, user_last_name = %s, user_email = %s, user_updated_at = %s
-#                 WHERE user_pk = %s
-#             """
-#         cursor.execute(q, (user_name, user_last_name, user_email, user_updated_at, user_pk))
-#         if cursor.rowcount != 1: x.raise_custom_exception("cannot update user", 401)
-#         db.commit()
-#         return """<template>user updated</template>"""
-#     except Exception as ex:
-#         ic(ex)
-#         if "db" in locals(): db.rollback()
-#         if isinstance(ex, x.CustomException): 
-#             toast = render_template("___toast.html", message=ex.message)
-#             return f"""<template mix-target="#toast" mix-bottom>{toast}</template>""", ex.code
-#         if isinstance(ex, x.mysql.connector.Error):
-#             if "users.user_email" in str(ex):
-#                 toast = render_template("___toast.html", message="email not available")
-#                 return f"""<template mix-target="#toast" mix-bottom>{toast}</template>""", 400
-#             return "<template>System upgrading</template>", 500        
-#         return "<template>System under maintenance</template>", 500    
-#     finally:
-#         if "cursor" in locals(): cursor.close()
-#         if "db" in locals(): db.close()
-
-
 @app.put("/users/<user_pk>")
 def user_update(user_pk):
     try:
@@ -634,26 +623,56 @@ def user_update(user_pk):
         user_last_name = x.validate_user_last_name()
         user_email = x.validate_user_email()
         user_updated_at = int(time.time())
+        
+        user_avatar = None
+
+        UPLOAD_FOLDER = os.path.join('static', 'avatars')
+        ic("Request files:", request.files)
+
+        if 'user_avatar' in request.files:
+            file = request.files['user_avatar']
+            if file and file.filename:
+                if not file.filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', 'webp')):
+                    x.raise_custom_exception("Invalid file type. Please upload an image.", 400)
+                
+                optimized_image = optimize_image(file)
+                filename = f"avatar_{user_pk}.webp"  # This will be stored in DB
+                filepath = os.path.join(UPLOAD_FOLDER, filename)  # Full path for saving file
+                
+                with open(filepath, 'wb') as f:
+                    f.write(optimized_image.getvalue())
+                
+                user_avatar = filename  # Only store filename in DB
        
         db, cursor = x.db()
-        q = "UPDATE users SET user_name = %s, user_last_name = %s, user_email = %s, user_updated_at = %s WHERE user_pk = %s"
-        cursor.execute(q, (user_name, user_last_name, user_email, user_updated_at, user_pk))
+        if user_avatar:
+            q = "UPDATE users SET user_name = %s, user_last_name = %s, user_email = %s, user_updated_at = %s, user_avatar = %s WHERE user_pk = %s"
+            cursor.execute(q, (user_name, user_last_name, user_email, user_updated_at, user_avatar, user_pk))
+        else:
+            q = "UPDATE users SET user_name = %s, user_last_name = %s, user_email = %s, user_updated_at = %s WHERE user_pk = %s"
+            cursor.execute(q, (user_name, user_last_name, user_email, user_updated_at, user_pk))
+            
         if cursor.rowcount != 1: x.raise_custom_exception("cannot update user", 401)
         db.commit()
 
-        # Update the session user data
-        session['user'].update({
+        session_update = {
             'user_name': user_name,
             'user_last_name': user_last_name,
             'user_email': user_email,
             'user_updated_at': user_updated_at
-        })
+        }
+        if user_avatar:
+            session_update['user_avatar'] = user_avatar
+            
+        session['user'].update(session_update)
         
         toast = render_template("___toast.html", message="Profile updated")
         return f"""<template mix-target="#toast">{toast}</template>"""
 
     except Exception as ex:
         ic(ex)
+        print("Type of exception:", type(ex))  # Add this
+        print("Exception details:", str(ex))    # Add this
         if "db" in locals(): db.rollback()
         if isinstance(ex, x.CustomException):
             toast = render_template("___toast.html", message=ex.message)
@@ -662,11 +681,16 @@ def user_update(user_pk):
             if "users.user_email" in str(ex):
                 toast = render_template("___toast.html", message="email not available")
                 return f"""<template mix-target="#toast" mix-bottom>{toast}</template>""", 400
-            return "<template>System upgrading</template>", 500        
-        return "<template>System under maintenance</template>", 500    
+            return f"<template>Error: {str(ex)}</template>", 500        
+        
+        # Instead of generic "System under maintenance", let's see the error
+        return f"<template>Error: {str(ex)}</template>", 500
+   
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
+
+
 
 ##############################
 @app.get("/users/block/<user_pk>")
