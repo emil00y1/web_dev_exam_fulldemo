@@ -221,16 +221,24 @@ def view_choose_role():
 def show_profile():
     user = session.get("user", "")
     if not user:
-        return redirect(url_for("get_index.show_index"))
-    return render_template("profile.html",x=x, user=user)
+        return redirect(url_for("view_login"))
+    return render_template("view_profile.html",x=x, user=user)
 
 
 ##############################
 @app.get("/users/delete/<user_pk>")
 def user_delete(user_pk):
     try:
-        if not "admin" in session.get("user", {}).get("roles", []): 
+         # Ensure user is logged in
+        if not session.get("user"):
             return redirect(url_for("view_login"))
+        
+        is_admin = "admin" in session.get("user", {}).get("roles", [])
+        current_user_pk = session["user"]["user_pk"]
+        
+        # Check authorization
+        if not is_admin and current_user_pk != user_pk:
+            x.raise_custom_exception("Unauthorized access", 403)
 
         user = {
             "user_pk": x.validate_uuid4(user_pk),
@@ -240,6 +248,9 @@ def user_delete(user_pk):
         db, cursor = x.db()
         cursor.execute("""SELECT * FROM users WHERE user_pk = %s""", (user["user_pk"],))
         user_data = cursor.fetchone()
+        if not user_data:
+            x.raise_custom_exception("User not found", 404)
+
         user_email = user_data["user_email"]
         user_name = user_data["user_name"]
 
@@ -252,12 +263,20 @@ def user_delete(user_pk):
             x.raise_custom_exception("User could not be deleted", 404)
         
         db.commit()
+
+        # Customize message based on whether it's an admin deletion or self-deletion
+        toast_message = "Your account has been deleted" if current_user_pk == user_pk else "User deleted"
+        toast = render_template("___toast.html", message=toast_message)
         
+        if current_user_pk == user_pk:
+            session.clear()
+            return """<template mix-redirect="/login"></template>"""
+
+
         # Format the deleted_at date and create the replacement HTML
         formatted_date = time.strftime('%A, %d %B %Y', time.localtime(user["user_deleted_at"]))
         deleted_html = f'<div class="d-flex a-items-center text-c-red:-14">Deleted: {formatted_date}</div>'
         
-        toast = render_template("___toast.html", message="User deleted")
         
         email_body = f"""<h1>Account deleted</h1>
           <p>Hi {user_name}, your account has been deleted. We are sad to see you go.</p>"""
@@ -392,6 +411,8 @@ def item_delete(item_pk):
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
+
+
 
 
 ##############################
