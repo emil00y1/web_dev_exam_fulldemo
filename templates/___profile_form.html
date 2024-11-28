@@ -1,7 +1,3 @@
-<div id="update-spinner" style="display: none;" class="text-center">
-    Updating...
-</div>
-
 <div class="d-flex flex-col">
     <label for="user_name">First Name</label>
     <input
@@ -38,8 +34,6 @@
 <button 
     mix-put="/users/{{ user['user_pk'] }}" 
     mix-data="#frm_user_update"
-    mix-wait="#update-spinner"
-    mix-default="Update profile"
 >
     Update profile
 </button>

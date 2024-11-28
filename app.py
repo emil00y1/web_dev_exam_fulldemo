@@ -156,16 +156,9 @@ def view_index():
 @app.get("/signup")
 @x.no_cache
 def view_signup():  
-    ic(session)
-    if session.get("user"):
-        if len(session.get("user").get("roles")) > 1:
-            return redirect(url_for("view_choose_role")) 
-        if "admin" in session.get("user").get("roles"):
-            return redirect(url_for("view_admin"))
-        if "customer" in session.get("user").get("roles"):
-            return redirect(url_for("view_customer")) 
-        if "partner" in session.get("user").get("roles"):
-            return redirect(url_for("view_partner"))         
+    if session.get("user"):     
+        return redirect(url_for("show_profile"))
+    
     return render_template("view_signup.html", x=x, title="Signup")
 
 
@@ -174,7 +167,7 @@ def view_signup():
 @x.no_cache
 def view_login():  
     if session.get("user"):
-        return redirect(url_for("profile"))
+        return redirect(url_for("show_profile"))
     
     messages = {
         "verify_email": "Account created! Please check your email to verify your account",
@@ -258,16 +251,8 @@ def show_profile():
 @app.get("/users/delete/<user_pk>")
 def user_delete(user_pk):
     try:
-         # Ensure user is logged in
-        if not session.get("user"):
+        if not "admin" in session.get("user", {}).get("roles", []): 
             return redirect(url_for("view_login"))
-        
-        is_admin = "admin" in session.get("user", {}).get("roles", [])
-        current_user_pk = session["user"]["user_pk"]
-        
-        # Check authorization
-        if not is_admin and current_user_pk != user_pk:
-            x.raise_custom_exception("Unauthorized access", 403)
 
         user = {
             "user_pk": x.validate_uuid4(user_pk),
@@ -277,36 +262,24 @@ def user_delete(user_pk):
         db, cursor = x.db()
         cursor.execute("""SELECT * FROM users WHERE user_pk = %s""", (user["user_pk"],))
         user_data = cursor.fetchone()
-        if not user_data:
-            x.raise_custom_exception("User not found", 404)
-
         user_email = user_data["user_email"]
         user_name = user_data["user_name"]
-
         cursor.execute("""UPDATE users 
                       SET user_deleted_at = %s 
                       WHERE user_pk = %s""", 
                       (user["user_deleted_at"], user["user_pk"]))
-        
+
         if cursor.rowcount == 0:
             x.raise_custom_exception("User could not be deleted", 404)
-        
+
         db.commit()
-
-        # Customize message based on whether it's an admin deletion or self-deletion
-        toast_message = "Your account has been deleted" if current_user_pk == user_pk else "User deleted"
-        toast = render_template("___toast.html", message=toast_message)
-        
-        if current_user_pk == user_pk:
-            session.clear()
-            return """<template mix-redirect="/login"></template>"""
-
 
         # Format the deleted_at date and create the replacement HTML
         formatted_date = time.strftime('%A, %d %B %Y', time.localtime(user["user_deleted_at"]))
         deleted_html = f'<div class="d-flex a-items-center text-c-red:-14">Deleted: {formatted_date}</div>'
-        
-        
+
+        toast = render_template("___toast.html", message="User deleted")
+
         email_body = f"""<h1>Account deleted</h1>
           <p>Hi {user_name}, your account has been deleted. We are sad to see you go.</p>"""
         x.send_email(user_email, "Your account has been deleted", email_body)
@@ -347,11 +320,6 @@ def user_delete(user_pk):
                 {toast}
             </template>
             """, 500
-
-    finally:
-        if "cursor" in locals(): cursor.close()
-        if "db" in locals(): db.close()
-
 ##############################
 @app.get("/items/delete/<item_pk>")
 def item_delete(item_pk):
@@ -454,6 +422,34 @@ def get_user_avatar_history(user_pk):
         return "<template>System under maintenance</template>", 500
 
 
+
+##############################
+@app.get("/users/show-delete-modal/<user_pk>")
+def show_delete_modal(user_pk):
+    try:
+        if not session.get("user"):
+            return redirect(url_for("view_login"))
+
+        modal_html = render_template("___delete_modal.html", user_pk=user_pk)
+        return f"""
+            <template mix-target="body" mix-top>
+                {modal_html}
+            </template>
+        """
+
+    except Exception as ex:
+        ic(ex)
+        toast = render_template("___toast.html", message=str(ex))
+        return f"""
+            <template mix-target="#toast" mix-bottom>
+                {toast}
+            </template>
+        """
+    
+
+
+
+
 ##############################
 ##############################
 ##############################
@@ -528,6 +524,12 @@ def signup():
                              hashed_password, user_avatar, user_created_at, user_deleted_at, 
                              user_blocked_at, user_updated_at, user_verified_at, 
                              user_verification_key))
+                             
+            # Add default customer role for new user
+            cursor.execute("""
+                INSERT INTO users_roles (user_role_user_fk, user_role_role_fk)
+                VALUES (%s, %s)
+            """, (user_pk, x.CUSTOMER_ROLE_PK))
 
         email_body = f"""To verify your account, please <a href="http://127.0.0.1/verify/{user_verification_key}">click here</a>"""
         x.send_email(user_email, "Please verify your account", email_body)
@@ -564,18 +566,24 @@ def login():
                 ON user_pk = user_role_user_fk 
                 JOIN roles
                 ON role_pk = user_role_role_fk
-                WHERE user_email = %s"""
+                WHERE user_email = %s 
+                AND user_deleted_at = 0"""
         cursor.execute(q, (user_email,))
         rows = cursor.fetchall()
         if not rows:
-            toast = render_template("___toast.html", message="user not registered")
+            toast = render_template("___toast.html", message="User not registered")
             return f"""<template mix-target="#toast">{toast}</template>""", 400     
+        # if rows[0]["user_deleted_at"] != 0:
+        #     toast = render_template("___toast.html", message="This user does not exist")
+        #     return f"""<template mix-target="#toast">{toast}</template>""", 401
         if not check_password_hash(rows[0]["user_password"], user_password):
-            toast = render_template("___toast.html", message="invalid credentials")
+            toast = render_template("___toast.html", message="Invalid credentials")
             return f"""<template mix-target="#toast">{toast}</template>""", 401
+        
         roles = []
         for row in rows:
             roles.append(row["role_name"])
+
         user = {
             "user_pk": rows[0]["user_pk"],
             "user_name": rows[0]["user_name"],
@@ -600,6 +608,121 @@ def login():
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
+
+
+##############################
+@app.post("/users/confirm-delete/<user_pk>")
+def confirm_delete(user_pk):
+    try:
+        if not session.get("user"):
+            return redirect(url_for("view_login"))
+        
+        is_admin = "admin" in session.get("user", {}).get("roles", [])
+        current_user_pk = session["user"]["user_pk"]
+        
+        if not is_admin and current_user_pk != user_pk:
+            x.raise_custom_exception("Unauthorized access", 403)
+
+        password = request.form.get('password')
+        if not password:
+            return """
+                <template mix-target="#delete-modal-error">
+                    <p class="text-c-red:-14 mt-2">Password is required</p>
+                </template>
+            """
+
+        db, cursor = x.db()
+        try:
+            cursor.execute("""SELECT * FROM users WHERE user_pk = %s""", (user_pk,))
+            user_data = cursor.fetchone()
+            
+            if not user_data:
+                x.raise_custom_exception("User not found", 404)
+
+            # Verify password
+            if not check_password_hash(user_data["user_password"], password):
+                return """
+                    <template mix-target="#delete-modal-error">
+                        <div class="text-c-red:-14 mt-2">Invalid password</div>
+                    </template>
+                """
+
+            # Proceed with deletion
+            deleted_at = int(time.time())
+            cursor.execute("""UPDATE users 
+                          SET user_deleted_at = %s 
+                          WHERE user_pk = %s""", 
+                          (deleted_at, user_pk))
+            
+            if cursor.rowcount == 0:
+                x.raise_custom_exception("User could not be deleted", 404)
+            
+            db.commit()
+
+            # Send confirmation email
+            email_body = f"""<h1>Account deleted</h1>
+              <p>Hi {user_data['user_name']}, your account has been deleted. We are sad to see you go.</p>"""
+            x.send_email(user_data["user_email"], "Your account has been deleted", email_body)
+
+            # Handle response based on who was deleted
+            toast_message = "Your account has been deleted" if current_user_pk == user_pk else "User deleted"
+            toast = render_template("___toast.html", message=toast_message)
+            
+            if current_user_pk == user_pk:
+                session.clear()
+                return f"""
+                    <template mix-target="#delete-modal" mix-replace></template>
+                    <template mix-redirect="/login"></template>
+                """
+
+            formatted_date = time.strftime('%A, %d %B %Y', time.localtime(deleted_at))
+            deleted_html = f'<div class="d-flex a-items-center text-c-red:-14">Deleted: {formatted_date}</div>'
+            
+            return f"""
+                <template mix-target="#delete-modal"></template>
+                <template mix-target='#actions-{user_pk}'>
+                    {deleted_html}
+                </template>
+                <template mix-target="#toast" mix-bottom>
+                    {toast}
+                </template>
+            """
+            
+        finally:
+            cursor.close()
+            db.close()
+
+    except Exception as ex:
+        ic(ex)
+        if "db" in locals(): db.rollback()
+        
+        if isinstance(ex, x.CustomException):
+            toast = render_template("___toast.html", message=ex.message)
+            return f"""
+                <template mix-target="#toast" mix-bottom>
+                    {toast}
+                </template>
+                """, ex.code
+        
+        if isinstance(ex, x.mysql.connector.Error):
+            ic(ex)
+            toast = render_template("___toast.html", message="Database error")
+            return f"""
+                <template mix-target="#toast" mix-bottom>
+                    {toast}
+                </template>
+                """, 500
+        
+        toast = render_template("___toast.html", message="System under maintenance")
+        return f"""
+            <template mix-target="#toast" mix-bottom>
+                {toast}
+            </template>
+            """, 500
+
+
+
+
 
 
 ##############################

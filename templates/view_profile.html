@@ -1,6 +1,6 @@
 {% include "_top_logged.html" %}
 
-<main class="mx-4 h-100vh" md="mx-6" lg="mx-8">
+<main class="mx-4 h-full min-h-80vh" md="mx-6" lg="mx-8">
   
   <section class="d-grid p-content-center" md="cols-2 px-2" lg="px-16" xl="px-24">
         <h1 class="text-w-semibold" md="d-none">Hi <span class="text-t-capitalize">{{ user["user_name"] }}</span></h1>
@@ -27,6 +27,8 @@
                                         mix-data="#frm_avatar_{{ loop.index }}"
                                         class="p-absolute top-0 left-0 cursor-pointer w-full h-full opacity-0 rounded-full"
                                         hover="bg-c-black:+12 opacity-50"
+                                        focus="outline-1 outline-c-tealblue:-6 outline-o-0.5"
+
                                     >
                                         <span class="p-absolute text-c-charocoal:-14 bottom-(-1.25rem) left-0">Choose</span>
                                     </button>
@@ -48,6 +50,7 @@
                         id="user_avatar"
                         name="user_avatar"
                         accept="image/*"
+                        focus="outline-1 outline-c-tealblue:-6 outline-o-0.5"
                         class="cursor-pointer h-min-content py-4"
                     />
                     <span class="text-sm text-gray-600">Recommended: Square image, max 800x800px</span>
@@ -61,6 +64,8 @@
                         type="text"
                         mix-check="{{ x.USER_NAME_REGEX }}"
                         value="{{ user['user_name'] }}"
+                        focus="outline-1 outline-c-tealblue:-6 outline-o-0.5"
+
                     />
                 </div>
         
@@ -72,6 +77,8 @@
                         type="text"
                         mix-check="{{ x.USER_LAST_NAME_REGEX }}"
                         value="{{ user['user_last_name'] }}"
+                        focus="outline-1 outline-c-tealblue:-6 outline-o-0.5"
+
                     />
                 </div>
         
@@ -83,6 +90,7 @@
                         type="text"
                         mix-check="{{ x.REGEX_EMAIL }}"
                         value="{{ user['user_email'] }}"
+                        focus="outline-1 outline-c-tealblue:-6 outline-o-0.5"
                     />
                 </div>
         
@@ -91,11 +99,14 @@
                     mix-data="#frm_user_update"
                     class="text-c-white bg-c-tealblue:-5 cursor-pointer"
                     hover="bg-c-tealblue:-8"
+                    focus="outline-1 outline-c-tealblue:-6 outline-o-0.5"
+
                 >
                     Update profile
                 </button>
         </form>
-        <button class="bg-none rounded-sm cursor-pointer text-80 px-0 py-1" hover="text-c-red:-14" title="Delete user" mix-get="/users/delete/{{user['user_pk']}}">
+        <button class="bg-none rounded-sm cursor-pointer text-80 px-0 py-1" hover="text-c-red:-14" title="Delete user" mix-get="/users/show-delete-modal/{{user['user_pk']}}" focus="outline-1 outline-c-tealblue:-6 outline-o-0.5"
+        >
                 Delete profile
         </button>
     </div>
