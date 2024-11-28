@@ -148,16 +148,6 @@ def view_login():
         message=display_message
     )
 
-##############################
-@app.get("/customer")
-@x.no_cache
-def view_customer():
-    if not session.get("user", ""): 
-        return redirect(url_for("view_login"))
-    user = session.get("user")
-    if len(user.get("roles", "")) > 1:
-        return redirect(url_for("view_choose_role"))
-    return render_template("view_customer.html", user=user)
 
 ##############################
 @app.get("/partner")
@@ -208,17 +198,6 @@ def view_admin():
         if 'cursor' in locals(): cursor.close()
         if 'db' in locals(): db.close()
 
-
-##############################
-@app.get("/choose-role")
-@x.no_cache
-def view_choose_role():
-    if not session.get("user", ""): 
-        return redirect(url_for("view_login"))
-    if not len(session.get("user").get("roles")) >= 2:
-        return redirect(url_for("view_login"))
-    user = session.get("user")
-    return render_template("view_choose_role.html", user=user, title="Choose role")
 
 
 ##############################
@@ -553,9 +532,7 @@ def login():
         }
         ic(user)
         session["user"] = user
-        if len(roles) == 1:
-            return f"""<template mix-redirect="/{roles[0]}"></template>"""
-        return f"""<template mix-redirect="/choose-role"></template>"""
+        return """<template mix-redirect="/profile"></template>"""
     except Exception as ex:
         ic(ex)
         if "db" in locals(): db.rollback()
