@@ -8,7 +8,7 @@
 <main class="w-full d-flex">
     <div id="map" class="w-full h-100vh"></div>
     
-    <div id="items" class="w-full h-100vh">
+    <div id="restaruants" class="w-full h-100vh">
         <!-- <button class="px-20 py-4 rounded-sm"
             mix-get="/items/page/1"
         >
@@ -18,14 +18,14 @@
 
     <div class="restaurant-container">
         {% for coord in coords %}
-        <div class="bg-c-gray:-1 rounded-sm shadow-md d-flex a-items-center mb-5 ml-5 mr-5 p-4">
+        <div class=" rounded-sm shadow-md d-flex a-items-center mb-5 ml-5 mr-5 p-4">
             <img 
                 src="{{ url_for('static', filename='avatars/' + coord['user_avatar']) if coord['user_avatar'] else url_for('static', filename='avatars/profile_1.jpg') }}" 
                 alt="User Avatar" 
-                class="w-24 h-24 rounded-sm border-2 border-c-tealblue:-5">
+                class="w-24 h-24 rounded-sm border-2">
             
             <section class="ml-4 text-a-left">
-                <h2 class="text-c-tealblue:-5 text-lg font-bold">Restaurant: {{ coord["user_name"] }}</h2>
+                <h2 class="text-c-tealblue:-5">Restaurant: {{ coord["user_name"] }}</h2>
                 <p class="text-c-gray:-6">Coordinates: {{ coord["coordinates"] }}</p>
             </section>
         </div>

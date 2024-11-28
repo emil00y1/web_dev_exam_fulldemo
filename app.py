@@ -74,6 +74,8 @@ def view_index():
         next_page = page + 1 if offset + per_page < total else None
         prev_page = page - 1 if page > 1 else None
 
+        user = session.get("user")
+
         coords = [
             {
                 "coords_pk": row["coords_pk"],
@@ -89,6 +91,7 @@ def view_index():
             coords=coords,
             next_page=next_page,
             prev_page=prev_page,
+            user=user
         )
 
     except Exception as ex:
