@@ -18,7 +18,10 @@
 
     <div class="restaurant-container">
         {% for coord in coords %}
+        <a href="restaurant={{coord['restaurant_fk']}}">
+
         <div class=" rounded-sm shadow-md d-flex a-items-center mb-5 ml-5 mr-5 p-4">
+            
             <img 
                 src="{{ url_for('static', filename='avatars/' + coord['user_avatar']) if coord['user_avatar'] else url_for('static', filename='avatars/profile_1.jpg') }}" 
                 alt="User Avatar" 
@@ -29,6 +32,7 @@
                 <p class="text-c-gray:-6">Coordinates: {{ coord["coordinates"] }}</p>
             </section>
         </div>
+    </a>
         {% endfor %}
     </div>
     
