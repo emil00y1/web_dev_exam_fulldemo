@@ -637,7 +637,7 @@ def user_update(user_pk):
                     x.raise_custom_exception("Invalid file type. Please upload an image.", 400)
                 
                 optimized_image = optimize_image(file)
-                filename = f"avatar_{user_pk}.webp"  # This will be stored in DB
+                filename = f"avatar_{user_pk}_{int(time.time())}.webp" # This will be stored in DB
                 filepath = os.path.join(UPLOAD_FOLDER, filename)  # Full path for saving file
                 
                 with open(filepath, 'wb') as f:

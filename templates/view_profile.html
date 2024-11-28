@@ -4,7 +4,7 @@
   
   <section md="d-grid cols-2">
     <div md="order-last w-full pa-16 d-flex a-items-center">
-        <img src="{{ url_for('static', filename='avatars/' + user['user_avatar']) if user['user_avatar'] else url_for('static', filename='avatars/default_avatar.webp') }}" alt="User Avatar" class="w-full rounded-full shadow-md">
+        <img src="{{ url_for('static', filename='avatars/' + user['user_avatar']) if user['user_avatar'] else url_for('static', filename='avatars/default_avatar.webp') }}" alt="User Avatar" class="w-full rounded-full shadow-md max-w-100">
     </div>
     <div>
         <h1>Hi <span class="text-t-capitalize">{{ user["user_name"] }}</span></h1>
