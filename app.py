@@ -336,6 +336,7 @@ def item_delete(item_pk):
         user_data = cursor.fetchone()
         user_email = user_data["user_email"]
         user_name = user_data["user_name"]
+    
 
         cursor.execute("""UPDATE items 
                       SET item_deleted_at = %s 
@@ -1088,10 +1089,12 @@ def view_restaurant(restaurant_fk):
         query_items = """SELECT item_pk, item_title, item_price 
                          FROM items 
                          WHERE restaurant_fk = %s 
-                         AND item_deleted_at IS NULL 
-                         AND item_blocked_at IS NULL"""
+                         AND item_deleted_at = 0 
+                         AND item_blocked_at = 0"""
         cursor.execute(query_items, (restaurant_fk,))
         items = cursor.fetchall()
+
+        user = session.get("user")
 
         # Fetch coordinates associated with the restaurant
         query_coords = """SELECT coordinates 
@@ -1104,7 +1107,8 @@ def view_restaurant(restaurant_fk):
         return render_template("view_restaurant.html", 
                                restaurant=restaurant, 
                                items=items, 
-                               coords=coords)
+                               coords=coords,
+                               user=user)
     except Exception as ex:
         ic(ex)
         if "db" in locals(): db.rollback()
