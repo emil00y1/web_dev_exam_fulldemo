@@ -110,7 +110,7 @@ try:
             user_last_name VARCHAR(20) NOT NULL,
             user_email VARCHAR(100) NOT NULL UNIQUE,
             user_password VARCHAR(255) NOT NULL,
-            user_avatar VARCHAR(50),
+            user_avatar VARCHAR(100),
             user_created_at INTEGER UNSIGNED,
             user_deleted_at INTEGER UNSIGNED,
             user_blocked_at INTEGER UNSIGNED,

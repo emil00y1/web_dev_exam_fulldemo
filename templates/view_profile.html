@@ -3,8 +3,36 @@
 <main class="mx-4 h-100vh" md="mx-6" lg="mx-8">
   
   <section md="d-grid cols-2">
-    <div md="order-last w-full pa-16 d-flex a-items-center">
-        <img src="{{ url_for('static', filename='avatars/' + user['user_avatar']) if user['user_avatar'] else url_for('static', filename='avatars/default_avatar.webp') }}" alt="User Avatar" class="w-full rounded-full shadow-md max-w-100">
+    <div md="order-last w-full pa-16 d-flex flex-col a-items-center">
+        <img src="{{ url_for('static', filename='avatars/' + user['user_avatar']) if user['user_avatar'] else url_for('static', filename='avatars/default_avatar.webp') }}" alt="User Avatar" class="w-full rounded-full shadow-md max-w-100 obj-f-cover aspect-ratio:1">
+        <div class="mt-4 a-self-start w-full">
+        <p class="mb-2">Previous avatars</p>
+        <div class="d-flex gap-2 flex-wrap">
+            {% for avatar in avatars %}
+                {% if avatar.filename != user.user_avatar %}
+                    <div class="p-relative" style="width: 48px; height: 48px;">
+                        <img 
+                            src="{{ url_for('static', filename='avatars/' + avatar.filename)}}"
+                            alt="Previous profile photo"
+                            class="rounded-full obj-f-cover"
+                            style="width: 48px; height: 48px;"
+                        />
+                        <form id="frm_avatar_{{ loop.index }}" class="d-none">
+                            <input type="hidden" name="filename" value="{{ avatar.filename }}">
+                        </form>
+                        <button 
+                            mix-put="/users/avatar/{{ user['user_pk'] }}"
+                            mix-data="#frm_avatar_{{ loop.index }}"
+                            class="p-absolute top-0 left-0 cursor-pointer w-full h-full opacity-0 rounded-full"
+                            hover="bg-c-black:+12 opacity-50"
+                        >
+                            <span class="p-absolute text-c-charocoal:-14 bottom-(-1.25rem) left-0">Choose</span>
+                        </button>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
     </div>
     <div>
         <h1>Hi <span class="text-t-capitalize">{{ user["user_name"] }}</span></h1>

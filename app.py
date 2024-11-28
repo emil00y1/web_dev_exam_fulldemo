@@ -47,6 +47,20 @@ def optimize_image(file):
         raise e
 
 
+def get_user_avatars(user_pk):
+    avatar_dir = os.path.join('static', 'avatars')
+    # Get all files that contain user_pk in their name
+    avatars = []
+    for filename in os.listdir(avatar_dir):
+        if f"avatar_{user_pk}_" in filename:
+            avatars.append({
+                'filename': filename,
+                'timestamp': int(filename.split('_')[2].split('.')[0]),  # Extract timestamp from filename
+                'path': f"/static/avatars/{filename}"
+            })
+    # Sort by timestamp, newest first
+    return sorted(avatars, key=lambda x: x['timestamp'], reverse=True)
+
 
 # app.secret_key = "your_secret_key"
 
@@ -234,9 +248,10 @@ def view_admin():
 @x.no_cache
 def show_profile():
     user = session.get("user", "")
+    avatars = get_user_avatars(session['user']['user_pk'])
     if not user:
         return redirect(url_for("view_login"))
-    return render_template("view_profile.html",x=x, user=user)
+    return render_template("view_profile.html",x=x, user=user, avatars=avatars)
 
 
 ##############################
@@ -427,7 +442,16 @@ def item_delete(item_pk):
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
 
-
+##############################
+@app.get("/users/avatars/<user_pk>")
+def get_user_avatar_history(user_pk):
+    try:
+        if not session.get("user"): x.raise_custom_exception("please login", 401)
+        avatars = get_user_avatars(user_pk)
+        return render_template("user_avatars.html", avatars=avatars, user_pk=user_pk)
+    except Exception as ex:
+        ic(ex)
+        return "<template>System under maintenance</template>", 500
 
 
 ##############################
@@ -615,6 +639,42 @@ def _________PUT_________(): pass
 ##############################
 ##############################
 
+
+##############################
+@app.put("/users/avatar/<user_pk>")
+def update_active_avatar(user_pk):
+    try:
+        if not session.get("user"): x.raise_custom_exception("Please login", 401)
+        filename = request.form.get('filename')
+        
+        db, cursor = x.db()
+        q = "UPDATE users SET user_avatar = %s WHERE user_pk = %s"
+        cursor.execute(q, (filename, user_pk))
+        if cursor.rowcount != 1: x.raise_custom_exception("cannot update avatar", 401)
+        db.commit()
+        
+        session['user']['user_avatar'] = filename
+        
+        toast = render_template("___toast.html", message="Profile photo updated")
+        return f"""
+            <template mix-target="#toast">{toast}</template>
+            <template mix-redirect="/profile"></template>
+        """
+        
+    except Exception as ex:
+        ic(ex)
+        if "db" in locals(): db.rollback()
+        if isinstance(ex, x.CustomException):
+            toast = render_template("___toast.html", message=ex.message)
+            return f"""<template mix-target="#toast" mix-bottom>{toast}</template>""", ex.code
+        return "<template>System upgrading</template>", 500
+    finally:
+        if "cursor" in locals(): cursor.close()
+        if "db" in locals(): db.close()
+
+
+
+##############################
 @app.put("/users/<user_pk>")
 def user_update(user_pk):
     try:
@@ -668,7 +728,10 @@ def user_update(user_pk):
         session['user'].update(session_update)
         
         toast = render_template("___toast.html", message="Profile updated")
-        return f"""<template mix-target="#toast">{toast}</template>"""
+        return f"""
+            <template mix-target="#toast">{toast}</template>
+             {"<template mix-redirect='/profile'></template>" if user_avatar else ""}    
+        """
 
     except Exception as ex:
         ic(ex)
