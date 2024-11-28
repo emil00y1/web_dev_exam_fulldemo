@@ -455,11 +455,37 @@ def signup():
         user_verification_key = str(uuid.uuid4())
 
         db, cursor = x.db()
-        q = 'INSERT INTO users VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
-        cursor.execute(q, (user_pk, user_name, user_last_name, user_email, 
-                           hashed_password, user_avatar, user_created_at, user_deleted_at, user_blocked_at, 
-                           user_updated_at, user_verified_at, user_verification_key))
         
+        # First check if the email exists and if it belongs to a deleted user
+        cursor.execute("SELECT user_deleted_at FROM users WHERE user_email = %s", (user_email,))
+        existing_user = cursor.fetchone()
+        
+        if existing_user:
+            if existing_user["user_deleted_at"] == 0:
+                # Active user with this email exists
+                toast = render_template("___toast.html", message="Email not available")
+                return f"""<template mix-target="#toast" mix-bottom>{toast}</template>""", 400
+            else:
+                # Reactivate deleted user
+                cursor.execute("""
+                    UPDATE users 
+                    SET user_deleted_at = 0,
+                        user_verified_at = 0,
+                        user_name = %s,
+                        user_last_name = %s,
+                        user_password = %s,
+                        user_verification_key = %s,
+                        user_updated_at = %s
+                    WHERE user_email = %s
+                """, (user_name, user_last_name, hashed_password, 
+                     user_verification_key, user_created_at, user_email))
+        else:
+            # New user signup
+            q = 'INSERT INTO users VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
+            cursor.execute(q, (user_pk, user_name, user_last_name, user_email, 
+                             hashed_password, user_avatar, user_created_at, user_deleted_at, 
+                             user_blocked_at, user_updated_at, user_verified_at, 
+                             user_verification_key))
 
         email_body = f"""To verify your account, please <a href="http://127.0.0.1/verify/{user_verification_key}">click here</a>"""
         x.send_email(user_email, "Please verify your account", email_body)
@@ -475,15 +501,11 @@ def signup():
             return f"""<template mix-target="#toast" mix-bottom>{toast}</template>""", ex.code    
         if isinstance(ex, x.mysql.connector.Error):
             ic(ex)
-            if "users.user_email" in str(ex): 
-                toast = render_template("___toast.html", message="email not available")
-                return f"""<template mix-target="#toast" mix-bottom>{toast}</template>""", 400
-            return f"""<template mix-target="#toast" mix-bottom>System upgrating</template>""", 500        
+            return f"""<template mix-target="#toast" mix-bottom>System upgrading</template>""", 500        
         return f"""<template mix-target="#toast" mix-bottom>System under maintenance</template>""", 500    
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
-
 
 ##############################
 @app.post("/login")
