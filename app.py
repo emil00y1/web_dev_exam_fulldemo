@@ -159,7 +159,24 @@ def view_signup():
     if session.get("user"):     
         return redirect(url_for("show_profile"))
     
-    return render_template("view_signup.html", x=x, title="Signup")
+    try:
+        db, cursor = x.db()
+        # Query roles from the roles table
+        query_roles = "SELECT role_pk, role_name FROM roles WHERE role_name != 'admin'"
+        cursor.execute(query_roles)
+        roles = cursor.fetchall()
+
+
+        # Render the signup page with roles
+        return render_template("view_signup.html", x=x, title="Signup", roles=roles)
+    except Exception as ex:
+        ic(ex)
+        if "db" in locals(): db.rollback()
+        toast = render_template("___toast.html", message="Error loading roles.")
+        return f"""<template mix-target="#toast">{toast}</template>""", 500
+    finally:
+        if "cursor" in locals(): cursor.close()
+        if "db" in locals(): db.close()
 
 
 ##############################
@@ -538,7 +555,21 @@ def signup():
         user_verified_at = 0
         user_verification_key = str(uuid.uuid4())
 
+        user_role_pk = request.form.get("role")  # Get selected role_pk from the form
+
         db, cursor = x.db()
+
+        # Ensure the selected role is valid and not "admin"
+        cursor.execute("""
+            SELECT role_name FROM roles WHERE role_pk = %s
+        """, (user_role_pk,))
+        selected_role = cursor.fetchone()
+        
+        if not selected_role:
+            raise x.CustomException("Invalid role selected", 400)
+        
+        if selected_role["role_name"].lower() == "admin":
+            raise x.CustomException("Unauthorized role selection", 400)
         
         # First check if the email exists and if it belongs to a deleted user
         cursor.execute("SELECT user_deleted_at FROM users WHERE user_email = %s", (user_email,))
@@ -571,11 +602,11 @@ def signup():
                              user_blocked_at, user_updated_at, user_verified_at, 
                              user_verification_key))
                              
-            # Add default customer role for new user
+            # Add customer role for new user
             cursor.execute("""
                 INSERT INTO users_roles (user_role_user_fk, user_role_role_fk)
                 VALUES (%s, %s)
-            """, (user_pk, x.CUSTOMER_ROLE_PK))
+            """, (user_pk, user_role_pk))
 
         email_body = f"""To verify your account, please <a href="http://127.0.0.1/verify/{user_verification_key}">click here</a>"""
         x.send_email(user_email, "Please verify your account", email_body)
