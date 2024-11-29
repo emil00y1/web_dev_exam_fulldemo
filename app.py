@@ -170,8 +170,9 @@ def view_login():
         return redirect(url_for("show_profile"))
     
     messages = {
-        "verify_email": "Account created! Please check your email to verify your account",
-        "verified": "Email verified successfully! Please log in"
+        "verify_email": "Account created! Please check your email to verify your account.",
+        "verified": "Email verified successfully! Please log in.",
+        "new_password": "You have successfully created a new password. Please login."
     }
     
     msg = request.args.get("msg")
@@ -183,6 +184,51 @@ def view_login():
         title="Login", 
         message=display_message
     )
+
+
+@app.get("/passwordrecovery")
+@x.no_cache
+def view_forgot_password():
+    if session.get("user"):
+        return redirect(url_for("show_profile"))
+    return render_template(
+        "view_forgot_password.html",
+        x=x
+    )
+
+@app.get("/createpassword")
+@x.no_cache
+def view_create_password():
+    try:
+        if session.get("user"):
+            return redirect(url_for("show_profile"))
+        
+        userId = request.args.get("id")
+        session["userId"] = userId
+
+        db, cursor = x.db()
+        cursor.execute("""
+                SELECT user_pk
+                FROM 
+                    users 
+                WHERE 
+                    user_pk = %s
+            """, (userId,))
+        validUser = cursor.fetchone()
+
+        if not validUser:
+            return redirect(url_for("view_signup"))
+
+        return render_template(
+            "view_create_password.html",
+            x=x
+        )
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+        if 'db' in locals():
+            db.close()
+
 
 
 ##############################
@@ -608,6 +654,122 @@ def login():
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
+
+
+##############################
+@app.post("/passwordrecovery")
+def passwordrecovery():
+    try:
+        user_email = x.validate_user_email()
+
+        db, cursor = x.db()
+
+        q = """ SELECT * FROM users 
+                WHERE user_email = %s 
+                AND user_deleted_at = 0"""
+        cursor.execute(q, (user_email,))
+        user_data = cursor.fetchone()
+        if not user_data:
+            return """<template mix-target="#new_password_status">
+                        <p class="text-c-red:-14 mt-2">There are no users signed up with this email</p>
+                    </template>""", 400     
+
+
+        email_body = f"""<h1>New password requested</h1>
+              <p>Hi {user_data['user_name']}, you have requested a new password. Please click on the link below to create a new password.</p>
+              <a href="127.0.0.1/createpassword?id={user_data['user_pk']}">Create new password</a>
+              <p>The Wolt Demo Team</p>
+              """
+        x.send_email(user_data["user_email"], "New password requested", email_body)
+
+        return """
+                <template mix-target="#new_password_status" mix-replace>
+                    <p class="text-c-green:-14 mt-1 text-w-semibold">Check your email to create a new password</p>
+                </template>
+            """  
+    except Exception as ex:
+        ic(ex)
+        if "db" in locals(): db.rollback()
+        if isinstance(ex, x.CustomException): 
+            toast = render_template("___toast.html", message=ex.message)
+            return f"""<template mix-target="#toast" mix-bottom>{toast}</template>""", ex.code    
+        if isinstance(ex, x.mysql.connector.Error):
+            toast = render_template("___toast.html", message=ex)
+            return f"""<template mix-target="#toast" mix-bottom>{toast}</template>""", 500      
+        toast = render_template("___toast.html", message=ex)
+        return f"""<template mix-target="#toast" mix-bottom>{toast}</template>""", 500  
+    finally:
+        if "cursor" in locals(): cursor.close()
+        if "db" in locals(): db.close()
+
+
+@app.put("/createpassword")
+def create_password():
+    try:
+        # user_pk = request.args.get('id')
+        # if not user_pk:
+        #     x.raise_custom_exception("Invalid request", 400)
+        user_pk = session.get("userId")
+        password = request.form.get('user_password')
+        confirm_password = request.form.get('user_confirm_password')
+        
+        
+        if not password or not confirm_password:
+            return """
+                <template mix-target="#password_status" mix-replace>
+                    <p id="password_status" class="text-c-red:-14 mt-2">Both password fields are required</p>
+                </template>
+            """
+            
+        if password != confirm_password:
+            return """
+                <template mix-target="#password_status" mix-replace>
+                    <p id="password_status" class="text-c-red:-14 mt-2">Passwords do not match</p>
+                </template>
+            """
+            
+        hashed_password = generate_password_hash(password)
+        
+        db, cursor = x.db()
+        cursor.execute("""
+                UPDATE users 
+                SET user_password = %s,
+                    user_updated_at = %s 
+                WHERE user_pk = %s
+                AND user_deleted_at = 0
+            """, (hashed_password, int(time.time()), user_pk))
+            
+        if cursor.rowcount != 1:
+                x.raise_custom_exception("User not found", 404)
+                
+        db.commit()
+            
+        return """
+                <template mix-redirect="/login?msg=new_password"></template>
+            """
+            
+    except Exception as ex:
+        ic(ex)
+        if "db" in locals(): db.rollback()
+        
+        if isinstance(ex, x.CustomException):
+            return f"""
+                <template mix-target="#password_status" mix-replace>
+                    <p id="password_status" class="text-c-red:-14 mt-2">{ex.message}</p>
+                </template>
+            """, ex.code
+            
+        return """
+            <template mix-target="#password_status">
+                <p id="password_status" class="text-c-red:-14 mt-2">An error occurred. Please try again.</p>
+            </template>
+        """, 500
+    
+    finally:
+        if "cursor" in locals(): cursor.close()
+        if "db" in locals(): db.close()
+
+
 
 
 ##############################
