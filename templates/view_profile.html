@@ -6,9 +6,9 @@
         <h1 class="text-w-semibold" md="d-none">Hi <span class="text-t-capitalize">{{ user["user_name"] }}</span></h1>
         <div md="order-last w-full pa-16 d-flex flex-col a-items-center">
             <img src="{{ url_for('static', filename='avatars/' + user['user_avatar']) if user['user_avatar'] else url_for('static', filename='avatars/default_avatar.webp') }}" alt="User Avatar" class="w-full rounded-full shadow-md max-w-90 obj-f-cover aspect-ratio:1 d-none" md="d-block">
-            <div class="mt-4 a-self-start w-full">
+            <div class="mt-6 a-self-start w-full">
                 {% if avatars|length > 0 %}
-                    <p class="mb-4">Change to a previous avatar</p>
+                    <p class="mb-4 text-w-semibold text-110">Change to a previous avatar</p>
                     <div class="d-flex gap-2 flex-wrap">
                         {% for avatar in avatars %}
                             {% if avatar.filename != user.user_avatar %}
@@ -17,7 +17,6 @@
                                         src="{{ url_for('static', filename='avatars/' + avatar.filename)}}"
                                         alt="Previous profile photo"
                                         class="rounded-full obj-f-cover w-full h-full shadow-md"
-                                    
                                     />
                                     <form id="frm_avatar_{{ loop.index }}" class="d-none">
                                         <input type="hidden" name="filename" value="{{ avatar.filename }}">
@@ -28,13 +27,33 @@
                                         class="p-absolute top-0 left-0 cursor-pointer w-full h-full opacity-0 rounded-full"
                                         hover="bg-c-black:+12 opacity-50"
                                         focus="outline-1 outline-c-tealblue:-6 outline-o-0.5"
-
                                     >
                                         <span class="p-absolute text-c-charocoal:-14 bottom-(-1.25rem) left-0">Choose</span>
                                     </button>
                                 </div>
                             {% endif %}
                         {% endfor %}
+                        {% if user.user_avatar != 'default_avatar.webp' %}
+                            <div class="p-relative w-12 h-12">
+                                <img 
+                                    src="{{ url_for('static', filename='avatars/default_avatar.webp')}}"
+                                    alt="Default profile avatar"
+                                    class="rounded-full obj-f-cover w-full h-full shadow-md"
+                                />
+                                <form id="frm_avatar_default" class="d-none">
+                                    <input type="hidden" name="filename" value="default_avatar.webp">
+                                </form>
+                                <button 
+                                    mix-put="/users/avatar/{{ user['user_pk'] }}"
+                                    mix-data="#frm_avatar_default"
+                                    class="p-absolute top-0 left-0 cursor-pointer w-full h-full opacity-0 rounded-full"
+                                    hover="bg-c-black:+12 opacity-50"
+                                    focus="outline-1 outline-c-tealblue:-6 outline-o-0.5"
+                                >
+                                    <span class="p-absolute text-c-charocoal:-14 bottom-(-1.25rem) left-0">Choose</span>
+                                </button>
+                            </div>
+                        {% endif %}
                     </div>
                 {% endif %}
             </div>
