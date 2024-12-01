@@ -2,12 +2,16 @@
 
 <main class="mx-4 h-full min-h-80vh" md="mx-6" lg="mx-8">
   
-  <section class="d-grid p-content-center" md="cols-2 px-2" lg="px-16" xl="px-24">
-        <h1 class="text-w-semibold" md="d-none">Hi <span class="text-t-capitalize">{{ user["user_name"] }}</span></h1>
+  <section class="d-flex flex-col" sm="d-grid p-content-center" md="cols-2 px-2" lg="px-16" xl="px-24">
+        <div md="d-none">
+            <h1 class="text-w-semibold ma-0" >Hi <span class="text-t-capitalize">{{ user["user_name"] }}</span></h1>
+            <p class="ma-0 text-w-semibold text-c-tealblue:-6 text-t-capitalize text-90">{{user["roles"][0]}}</p>
+            <p class="text-90 ma-0">Joined <span>{{time.localtime(user['user_verified_at'])|strftime('%A, %d %B %Y')}}</span></p>
+        </div>
         <div md="order-last w-full pa-16 d-flex flex-col a-items-center">
             <img src="{{ url_for('static', filename='avatars/' + user['user_avatar']) if user['user_avatar'] else url_for('static', filename='avatars/default_avatar.webp') }}" alt="User Avatar" class="w-full rounded-full shadow-md max-w-90 obj-f-cover aspect-ratio:1 d-none" md="d-block">
+            {% if avatars|length > 0 %}
             <div class="mt-6 a-self-start w-full">
-                {% if avatars|length > 0 %}
                     <p class="mb-4 text-w-semibold text-110">Change to a previous avatar</p>
                     <div class="d-flex gap-2 flex-wrap">
                         {% for avatar in avatars %}
@@ -55,13 +59,17 @@
                             </div>
                         {% endif %}
                     </div>
-                {% endif %}
-            </div>
+                </div>    
+            {% endif %}
         </div>
-    <div>
-        <h1 class="d-none text-w-semibold" md="d-block">Hi <span class="text-t-capitalize">{{ user["user_name"] }}</span></h1>
-        <h2 class="mt-6 text-w-semibold" md="text-110 mt-4">Your information</h2>
-        <form id="frm_user_update" class="d-flex flex-col gap-4 w-min-content" enctype="multipart/form-data">
+    <div sm="w-min-content">
+    <div class="d-none" md="d-block">
+            <h1 class="text-w-semibold ma-0" >Hi <span class="text-t-capitalize">{{ user["user_name"] }}</span></h1>
+            <p class="ma-0 text-w-semibold text-c-tealblue:-6 text-t-capitalize text-90">{{user["roles"][0]}}</p>
+            <p class="text-90 ma-0">Joined <span>{{time.localtime(user['user_verified_at'])|strftime('%A, %d %B %Y')}}</span></p>
+    </div>
+        <h2 class="mt-4 text-w-semibold" md="text-110 mt-6">Your information</h2>
+        <form id="frm_user_update" class="d-flex flex-col gap-4" sm="w-min-content" enctype="multipart/form-data">
                 <div class="d-flex flex-col">
                     <label for="user_avatar">Upload Profile Avatar</label>
                     <input
@@ -124,10 +132,15 @@
                     Update profile
                 </button>
         </form>
-        <button class="bg-none rounded-sm cursor-pointer text-80 px-0 py-1" hover="text-c-red:-14" title="Delete user" mix-get="/users/show-delete-modal/{{user['user_pk']}}" focus="outline-1 outline-c-tealblue:-6 outline-o-0.5"
-        >
-                Delete profile
-        </button>
+        <div class="d-flex flex-col">
+            {% if user["roles"][0] == "customer" %}
+            <button class="bg-c-transparent border-c-tealblue:-6 border-1 cursor-pointer w-full mt-4" hover="text-c-tealblue:-6" mix-get="/users/show-confirm-modal/{{user['user_pk']}}" focus="outline-1 outline-c-tealblue:-6 outline-o-0.5">Become a partner</button>
+            {% endif %}
+            <button class="bg-none rounded-sm cursor-pointer text-80 px-0 py-1 w-max-content" hover="text-c-red:-14" mix-get="/users/show-delete-modal/{{user['user_pk']}}" focus="outline-1 outline-c-tealblue:-6 outline-o-0.5"
+            >
+                    Delete profile
+            </button>
+        </div>
     </div>
  
   </section>

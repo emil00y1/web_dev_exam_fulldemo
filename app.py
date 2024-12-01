@@ -307,7 +307,7 @@ def show_profile():
     if not user:
         return redirect(url_for("view_login"))
     avatars = get_user_avatars(session['user']['user_pk'])
-    return render_template("view_profile.html",x=x, user=user, avatars=avatars)
+    return render_template("view_profile.html",x=x, user=user, avatars=avatars, time=time)
 
 
 ##############################
@@ -509,6 +509,28 @@ def show_delete_modal(user_pk):
             </template>
         """
     
+##############################
+@app.get("/users/show-confirm-modal/<user_pk>")
+def show_confirm_modal(user_pk):
+    try:
+        if not session.get("user"):
+            return redirect(url_for("view_login"))
+
+        modal_html = render_template("___confirm_modal.html", user_pk=user_pk)
+        return f"""
+            <template mix-target="body" mix-top>
+                {modal_html}
+            </template>
+        """
+
+    except Exception as ex:
+        ic(ex)
+        toast = render_template("___toast.html", message=str(ex))
+        return f"""
+            <template mix-target="#toast" mix-bottom>
+                {toast}
+            </template>
+        """
 
 
 
@@ -667,6 +689,7 @@ def login():
             "user_last_name": rows[0]["user_last_name"],
             "user_email": rows[0]["user_email"],
             "roles": roles,
+            "user_verified_at": rows[0]["user_verified_at"],
             "user_avatar": rows[0]["user_avatar"]
         }
         ic(user)
@@ -733,7 +756,7 @@ def passwordrecovery():
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
 
-
+############################
 @app.put("/createpassword")
 def create_password():
     try:
@@ -800,7 +823,67 @@ def create_password():
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
 
+############################
 
+@app.put("/users/update-role/<user_pk>")
+@x.no_cache
+def update_role(user_pk):
+    user = session.get("user")
+    if not user:
+        return redirect(url_for("view_login"))
+    try:
+        db, cursor = x.db()
+
+        # First check if the user exists and is not deleted
+        cursor.execute("SELECT user_pk FROM users WHERE user_pk = %s AND user_deleted_at = 0", (user_pk,))
+        existing_user = cursor.fetchone()
+        
+        if not existing_user:
+            raise x.CustomException("User not found", 404)
+
+        # Get the partner role_pk
+        cursor.execute("""
+            SELECT role_pk FROM roles WHERE role_name = 'partner'
+        """)
+        partner_role = cursor.fetchone()
+        
+        if not partner_role:
+            raise x.CustomException("Partner role not found", 400)
+        
+        # Update the user's role in users_roles table
+        cursor.execute("""
+            UPDATE users_roles 
+            SET user_role_role_fk = %s
+            WHERE user_role_user_fk = %s
+        """, (partner_role["role_pk"], user_pk))
+            
+        if cursor.rowcount != 1:
+            raise x.CustomException("Error updating user role", 400)
+                
+        db.commit()
+
+        user["roles"][0] = 'partner'
+        session["user"] = user
+            
+        return f"""<template mix-redirect="/profile"></template>"""
+            
+    except Exception as ex:
+        ic(ex)
+        if "db" in locals(): db.rollback()
+        
+        if isinstance(ex, x.CustomException):
+            toast = render_template("___toast.html", message=ex.message)
+            return f"""<template mix-target="#toast" mix-bottom>{toast}</template>""", ex.code
+            
+        if isinstance(ex, x.mysql.connector.Error):
+            ic(ex)
+            return f"""<template mix-target="#toast" mix-bottom>System upgrading</template>""", 500
+            
+        return f"""<template mix-target="#toast" mix-bottom>System under maintenance</template>""", 500
+    
+    finally:
+        if "cursor" in locals(): cursor.close()
+        if "db" in locals(): db.close()
 
 
 ##############################
