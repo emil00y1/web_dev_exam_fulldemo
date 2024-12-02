@@ -24,7 +24,7 @@
                 <label for="user_role">
                     <span>Role</span>
                 </label>
-                <select name="role" id="user_role" class="p-2 br-4 bg-c-white shadow-sm">
+                <select name="role" id="user_role" class="p-2 br-4 bg-c-white shadow-sm pa-4 text-100 text-t-capitalize">
                         {% for role in roles %}
                         <option value="{{ role.role_pk }}">{{ role.role_name }}</option>
                         {% endfor %}
