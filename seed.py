@@ -37,6 +37,33 @@ food_names = [
     "Vegan burger", "Sweet potato fries", "Chicken kebab", "Vegetarian pizza", "Pastrami on rye"
 ]
 
+restaurant_names = [
+    "Jackson's Grill", "Smith's Bistro", "Lakeview Tavern", "Sunset Café",
+    "Harbor House", "Willow & Sage", "Rusty Spoon", "Golden Lantern",
+    "Orchard Kitchen", "Mariner's Table", "Scarlet Fork", "Bayside Eatery",
+    "Pine & Poppy", "Maple Leaf", "Meadowlark", "Juniper & Thyme",
+    "Silver Birch", "Cedar & Stone", "Violet Grill", "Velvet Vine",
+    "Oakwood Kitchen", "Foxglove Tavern", "Briarwood", "Aspen Table",
+    "Azure Café", "Meadow Grill", "Riverbend", "Golden Stag", "Lavender Grove",
+    "Crimson Chalet", "Elm & Ivy", "Seabreeze", "Jade Leaf", "Wildflower",
+    "Summit Club", "Bluebell Bistro", "Coastal Bliss", "Morning Frost",
+    "Autumn Grill", "Willow Glen", "Scarlet Lantern", "Sapphire Café",
+    "Wild Iris", "Hickory Hearth", "Golden Prairie", "Amber Arch",
+    "Banyan & Bramble", "Urban Oak", "Blossom Hill", "Wishing Well",
+    "Rustic Lantern", "Juniper Clover", "Sunrise Bistro", "Ocean Pearl",
+    "Cloverleaf", "Twisted Vine", "Harvest Glow", "Windmill Grill",
+    "Vine & Velvet", "Copper Table", "Starry Night", "Golden Horizon",
+    "Willow Arch", "Birch & Berry", "Painted Fern", "Horizon Table",
+    "Serene Hearth", "Jade Café", "Redberry Retreat", "Cedar Lane",
+    "Alpine Haven", "Fox & Fir", "Bramble & Bee", "Lunar Grove",
+    "Pinecone Table", "Velvet Hearth", "Morning Glory", "Aurora Haven",
+    "Golden Ember", "Seaside Café", "Mountain Ash", "Fern & Feather",
+    "Sapphire Wave", "Autumn Glow", "Golden Iris", "Meadow Breeze",
+    "Riverside Café", "Willowbrook", "Evergreen", "Amber Flame",
+    "Silver Hollow", "Twilight Café", "Crimson Horizon", "Cedar Meadow"
+]
+
+
 coords_list = [
     "[55.7039, 12.5700]", "[55.6542, 12.5115]", "[55.6105, 12.5312]", "[55.7891, 12.4401]",
     "[55.6587, 12.5859]", "[55.7103, 12.4915]", "[55.7519, 12.6132]", "[55.6743, 12.5923]",
@@ -369,7 +396,7 @@ try:
         user_verified_at =  0 if random.choice([True, False]) else int(time.time())
         user = {
             "user_pk" : user_pk,
-            "user_name" : fake.first_name(),
+            "user_name" : random.choice(restaurant_names),
             "user_last_name" : "",
             "user_email" : fake.unique.email(),
             "user_password" : user_password,
