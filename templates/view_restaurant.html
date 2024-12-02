@@ -1,37 +1,111 @@
-{% if user %}
-    {% include "_top_logged.html" %}
-{% else %}
-    {% include "_top.html" %}
-{% endif %}
+{% if user %} {% include "_top_logged.html" %} {% else %} {% include "_top.html"
+%} {% endif %}
 
-
-<main class="w-95vw  max-w-1200 mx-auto p-6">
-    <!-- Restaurant Details -->
-    <div class="d-flex a-items-center mb-6">
-        <img src="{{ url_for('static', filename='avatars/' + restaurant['user_avatar']) if restaurant['user_avatar'] else url_for('static', filename='avatars/profile_1.jpg') }}" 
-             alt="Restaurant Avatar" class="w-24 h-24 rounded-full mr-4">
-        <div>
-            <h1 class="text-c-black text-2xl">{{ restaurant['user_name'] }}</h1>
-            {% if coords %}
-            <p class="text-c-gray">Coordinates: {{ coords['coordinates'] }}</p>
-            {% endif %}
-        </div>
+<main class="w-95vw max-w-1200 mx-auto p-6">
+  <!-- Restaurant Details -->
+  <div class="d-flex a-items-center mb-6">
+    <img
+      src="{{ url_for('static', filename='avatars/' + restaurant['user_avatar']) if restaurant['user_avatar'] else url_for('static', filename='avatars/profile_1.jpg') }}"
+      alt="Restaurant Avatar"
+      class="w-24 h-24 rounded-full mr-4"
+    />
+    <div>
+      <h1 class="text-c-black text-2xl">{{ restaurant['user_name'] }}</h1>
+      {% if coords %}
+      <p class="text-c-gray">Coordinates: {{ coords['coordinates'] }}</p>
+      {% endif %}
     </div>
+  </div>
 
-    <!-- Restaurant Items -->
-    <h2 class="text-xl mb-4">Menu Items</h2>
-    {% if items %}
-        <div class="d-grid cols-2 gap-4">
-            {% for item in items %}
-            <div class="rounded-sm pa-4 border-2 border-s-solid border-c-tealblue:-3 shadow-sm">
-                <h3 class="text-c-black text-lg font-bold">{{ item['item_title'] }}</h3>
-                <p class="text-c-gray">Price: ${{ item['item_price'] }}</p>
+  <!-- Restaurant Items -->
+  <h2 class="text-xl mb-4">Menu Items</h2>
+  {% if items %}
+  <div class="d-grid cols-2 gap-4">
+    {% for item in items %}
+    <article
+      class="rounded-sm pa-4 border-2 border-s-solid border-c-tealblue:-3 shadow-sm"
+    >
+      <div>
+        <h3 class="text-c-black text-lg font-bold">{{ item['item_title'] }}</h3>
+        <p class="text-c-gray">Price: ${{ item['item_price'] }}</p>
+
+        <!-- Order form with quantity selector -->
+        <form id="frm_add_to_order_{{ item['item_pk'] }}" class="mt-4">
+          <div class="d-flex a-items-center gap-2">
+            <div
+              class="d-flex a-items-center bg-c-tealblue:+46 rounded-sm pa-1"
+            >
+              <!-- Minus button -->
+              <button
+                type="button"
+                class="quantity-btn-decrease rounded-full cursor-pointer bg-c-transparent text-c-tealblue:-6 text-140 d-flex a-items-center h-min-content pa-3 cursor-not-allowed"
+                data-item-id="{{ item['item_pk'] }}"
+                parent
+              >
+                <svg
+                  class="fill-c-tealblue:-6"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 -960 960 960"
+                  width="20px"
+                  height="20px"
+                  parent-hover="fill-c-tealblue:+10"
+                >
+                  <path d="M200-440v-80h560v80H200Z" />
+                </svg>
+              </button>
+
+              <!-- Quantity input - now readonly -->
+              <input
+                type="text"
+                name="quantity"
+                id="quantity_{{ item['item_pk'] }}"
+                value="1"
+                readonly
+                class="quantity-input text-a-center border-0 bg-c-transparent max-w-14 text-c-tealblue:-6 text-w-semibold text-105"
+                data-item-id="{{ item['item_pk'] }}"
+              />
+
+              <!-- Plus button -->
+              <button
+                type="button"
+                class="quantity-btn-increase rounded-full cursor-pointer bg-c-transparent text-c-tealblue:-6 text-140 d-flex a-items-center h-min-content pa-3"
+                data-item-id="{{ item['item_pk'] }}"
+                parent
+              >
+                <svg
+                  class="fill-c-tealblue:-6"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 -960 960 960"
+                  height="20px"
+                  width="20px"
+                  parent-hover="fill-c-tealblue:+10"
+                >
+                  <path
+                    d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"
+                  />
+                </svg>
+              </button>
             </div>
-            {% endfor %}
-        </div>
-    {% else %}
-        <p class="text-c-gray">No items available for this restaurant.</p>
-    {% endif %}
+
+            <!-- Add to order button -->
+            <button
+              mix-post="/add-to-order/{{ item['item_pk'] }}"
+              mix-data="#frm_add_to_order_{{ item['item_pk'] }}"
+              class="text-c-white bg-c-tealblue:-5 py-7 px-4 rounded-sm text-w-semibold d-flex a-items-center"
+              hover="bg-c-tealblue:-8 cursor-pointer"
+              focus="outline-1 outline-c-tealblue:-6 outline-o-0.5" data-base-price="{{ item['item_price'] }}"
+            >
+              Add to order $<span id="total_price_{{ item['item_pk'] }}">{{ item['item_price'] }}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="text-c-gray">No items available for this restaurant.</p>
+  {% endif %}
 </main>
 
 {% include "_bottom.html" %}

@@ -1,60 +1,58 @@
-{% if user %}
-    {% include "_top_logged.html" %}
-{% else %}
-    {% include "_top.html" %}
-{% endif %}
-
+{% if user %} {% include "_top_logged.html" %} {% else %} {% include "_top.html"
+%} {% endif %}
 
 <main class="w-full d-flex">
-    <div id="map" class="w-full h-100vh"></div>
-    
-    <div id="restaruants" class="w-full h-100vh">
-        <!-- <button class="px-20 py-4 rounded-sm"
+  <div id="map" class="w-full"></div>
+
+  <div id="restaruants" class="w-full">
+    <!-- <button class="px-20 py-4 rounded-sm"
             mix-get="/items/page/1"
         >
             More
     </button> -->
 
-
     <div class="restaurant-container">
-        {% for coord in coords %}
-        <a href="restaurant/{{coord['restaurant_fk']}}">
+      {% for coord in coords %}
+      <a href="restaurant/{{coord['restaurant_fk']}}">
+        <div
+          class="rounded-sm shadow-md d-flex a-items-center mb-3 ml-5 mr-5 p-4"
+        >
+          <img
+            src="{{ url_for('static', filename='avatars/' + coord['user_avatar']) if coord['user_avatar'] else url_for('static', filename='avatars/profile_1.jpg') }}"
+            alt="User Avatar"
+            class="w-24 h-24 rounded-sm border-2"
+          />
 
-        <div class=" rounded-sm shadow-md d-flex a-items-center mb-3 ml-5 mr-5 p-4">
-            
-            <img 
-                src="{{ url_for('static', filename='avatars/' + coord['user_avatar']) if coord['user_avatar'] else url_for('static', filename='avatars/profile_1.jpg') }}" 
-                alt="User Avatar" 
-                class="w-24 h-24 rounded-sm border-2">
-            
-            <section class="ml-4 text-a-left">
-                <h2 class="text-c-tealblue:-5">{{ coord["user_name"] }}</h2>
-                <p class="text-c-gray:-6">Coordinates: {{ coord["coordinates"] }}</p>
-            </section>
+          <section class="ml-4 text-a-left">
+            <h2 class="text-c-tealblue:-5">{{ coord["user_name"] }}</h2>
+            <p class="text-c-gray:-6">
+              Coordinates: {{ coord["coordinates"] }}
+            </p>
+          </section>
         </div>
-    </a>
-        {% endfor %}
+      </a>
+      {% endfor %}
     </div>
-    
+
     <!-- Pagination Controls -->
     <div class="d-flex j-content-center a-items-center mt-5 gap-4">
-        {% if prev_page %}
-        <a href="?page={{ prev_page }}" class="px-6 py-3 bg-c-tealblue:-5 hover:bg-c-tealblue:-8 text-c-white rounded-md">
-            Previous
-        </a>
-        {% endif %}
-        {% if next_page %}
-        <a href="?page={{ next_page }}" class="px-6 py-3 bg-c-tealblue:-5 hover:bg-c-tealblue:-8 text-c-white rounded-md">
-            Next
-        </a>
-        {% endif %}
+      {% if prev_page %}
+      <a
+        href="?page={{ prev_page }}"
+        class="px-6 py-3 bg-c-tealblue:-5 hover:bg-c-tealblue:-8 text-c-white rounded-md"
+      >
+        Previous
+      </a>
+      {% endif %} {% if next_page %}
+      <a
+        href="?page={{ next_page }}"
+        class="px-6 py-3 bg-c-tealblue:-5 hover:bg-c-tealblue:-8 text-c-white rounded-md"
+      >
+        Next
+      </a>
+      {% endif %}
     </div>
-    
-
-    </div>
+  </div>
 </main>
-<script>
-    console.log({{ coords }})
-</script>
 
 {% include "_bottom_index.html" %}
