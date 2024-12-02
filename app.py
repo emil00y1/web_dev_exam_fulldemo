@@ -1,4 +1,4 @@
-from flask import Flask, session, render_template, redirect, url_for, make_response, request
+from flask import Flask, session, render_template, redirect, url_for, make_response, request, redirect
 from flask_session import Session
 from werkzeug.security import generate_password_hash
 from werkzeug.security import check_password_hash
@@ -1603,3 +1603,167 @@ def view_restaurant(restaurant_fk):
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
+
+#######################################################
+
+@app.get("/restaurant")
+@x.no_cache
+def restaurant_dashboard():
+    try:
+        # Ensure the user is logged in
+        user = session.get("user")
+        if not user:
+            return "Please log in to access your dashboard.", 401
+
+        # Ensure the user has the role "restaurant"
+        if "restaurant" not in user.get("roles", []):
+            return "Access restricted to restaurant users only.", 403
+
+        restaurant_fk = user["user_pk"]
+
+        db, cursor = x.db()
+
+        # Fetch restaurant details from the `users` table
+        query_restaurant = """SELECT user_pk, user_name, user_avatar 
+                              FROM users 
+                              WHERE user_pk = %s"""
+        cursor.execute(query_restaurant, (restaurant_fk,))
+        restaurant = cursor.fetchone()
+        if not restaurant:
+            toast = render_template("___toast.html", message="Restaurant not found.")
+            return f"""<template mix-target="#toast">{toast}</template>""", 404
+
+        # Fetch items associated with the restaurant
+        query_items = """SELECT item_pk, item_title, item_price 
+                         FROM items 
+                         WHERE restaurant_fk = %s 
+                         AND item_deleted_at = 0 
+                         AND item_blocked_at = 0"""
+        cursor.execute(query_items, (restaurant_fk,))
+        items = cursor.fetchall()
+
+        user = session.get("user")
+
+        # Fetch coordinates associated with the restaurant
+        query_coords = """SELECT coordinates 
+                          FROM coords 
+                          WHERE restaurant_fk = %s"""
+        cursor.execute(query_coords, (restaurant_fk,))
+        coords = cursor.fetchone()  # Assuming one coordinate per restaurant
+
+        # Render the dashboard template
+        return render_template(
+            "restaurant_dashboard.html",
+            restaurant=restaurant,
+            items=items,
+            coords=coords,
+            user=user,
+        )
+
+    except Exception as ex:
+        print("Error loading restaurant dashboard:", ex)
+        if "db" in locals():
+            db.rollback()
+        return "Error loading restaurant dashboard.", 500
+    finally:
+        if "cursor" in locals():
+            cursor.close()
+        if "db" in locals():
+            db.close()
+
+
+@app.post("/restaurant/add_item")
+def add_item():
+    try:
+        # Ensure the user is logged in
+        user = session.get("user")
+        if not user:
+            return "Please log in to add items.", 401
+
+        # Ensure the user has the role "restaurant"
+        if "restaurant" not in user.get("roles", []):
+            return "Access restricted to restaurant users only.", 403
+
+        restaurant_fk = user["user_pk"]
+
+        # Get form data
+        item_title = request.form.get("item_title")
+        item_price = request.form.get("item_price")
+
+        if not item_title or not item_price:
+            return "Item title and price are required.", 400
+
+        # Generate UUID for item_pk
+        item_pk = str(uuid.uuid4())
+
+        db, cursor = x.db()
+
+        # Insert the new item
+        query_add_item = """INSERT INTO items (item_pk, restaurant_fk, item_title, item_price, item_deleted_at, item_blocked_at) 
+                            VALUES (%s, %s, %s, %s, 0, 0)"""
+        cursor.execute(query_add_item, (item_pk, restaurant_fk, item_title, item_price))
+        db.commit()
+
+        print("Item successfully added.")
+
+        # Redirect to the restaurant dashboard
+        return redirect("/restaurant")
+
+    except Exception as ex:
+        print("Error adding item:", ex)
+        if "db" in locals():
+            db.rollback()
+        return "Error adding item.", 500
+    finally:
+        if "cursor" in locals():
+            cursor.close()
+        if "db" in locals():
+            db.close()
+
+
+@app.post("/restaurant/delete_item/<item_pk>")
+def delete_item(item_pk):
+    try:
+        # Ensure the user is logged in
+        user = session.get("user")
+        if not user:
+            return "Please log in to delete items.", 401
+
+        # Ensure the user has the role "restaurant"
+        if "restaurant" not in user.get("roles", []):
+            return "Access restricted to restaurant users only.", 403
+
+        # Get the restaurant_fk (user's ID)
+        restaurant_fk = user["user_pk"]
+
+        # Get the current Unix timestamp
+        deleted_at_timestamp = int(time.time())
+
+        db, cursor = x.db()
+
+        # Debugging: Check the item_pk, restaurant_fk, and deleted_at values
+        print(f"Attempting to delete item with item_pk: {item_pk} for restaurant_fk: {restaurant_fk}. Setting item_deleted_at to: {deleted_at_timestamp}")
+
+        # Update the item to mark it as deleted
+        query_delete_item = """UPDATE items 
+                               SET item_deleted_at = %s 
+                               WHERE item_pk = %s AND restaurant_fk = %s"""
+        cursor.execute(query_delete_item, (deleted_at_timestamp, item_pk, restaurant_fk))
+        db.commit()
+
+        print(f"Item {item_pk} successfully marked as deleted.")
+
+        # Redirect back to the restaurant dashboard
+        return redirect("/restaurant")
+
+    except Exception as ex:
+        # Log detailed error to console
+        print(f"Error deleting item: {ex}")
+        if "db" in locals():
+            db.rollback()
+        return f"Error deleting item: {ex}", 500
+    finally:
+        if "cursor" in locals():
+            cursor.close()
+        if "db" in locals():
+            db.close()
