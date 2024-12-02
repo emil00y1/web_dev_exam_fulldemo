@@ -1,0 +1,29 @@
+<div id="confirm-modal" class="p-fixed inset-0 bg-c-black:+10 bg-alpha-50 d-flex a-items-center j-content-center z-100 h-full ts-500">
+  <div class="bg-c-white rounded-md pa-6 max-w-96 w-full mx-4">
+    <h3 class="mb-4">Confirm change</h3>
+    <p>Do you wish to change your account to be a Wolt Partner?</p>
+    <form id="update_role_form">
+      <div class="d-flex j-content-end gap-2">
+        <button 
+          type="button"
+          class="px-4 py-2 border rounded cursor-pointer bg-c-white:-6"
+          hover="bg-c-white:-16"
+          focus="outline-1 outline-c-tealblue:-6 outline-o-0.5"
+          onclick="this.closest('#confirm-modal').remove()"
+        >
+          Cancel
+        </button>
+        <button 
+          type="submit"
+          class="px-4 py-2 bg-c-tealblue:-5 text-c-white rounded cursor-pointer"
+          hover="bg-c-tealblue:-8"
+          focus="outline-1 outline-c-tealblue:-6 outline-o-0.5"
+          mix-put="/users/update-role/{{user_pk}}"
+          mix-data="#update_role_form"
+        >
+          Update account
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
