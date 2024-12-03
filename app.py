@@ -2061,3 +2061,64 @@ def delete_item(item_pk):
             cursor.close()
         if "db" in locals():
             db.close()
+
+
+@app.post("/restaurant/edit_item/<item_pk>")
+def edit_item(item_pk):
+    try:
+        # Ensure the user is logged in
+        user = session.get("user")
+        if not user:
+            return "Please log in to edit items.", 401
+
+        # Ensure the user has the role "restaurant"
+        if "restaurant" not in user.get("roles", []):
+            return "Access restricted to restaurant users only.", 403
+
+        restaurant_fk = user["user_pk"]
+
+        # Get form data
+        item_title = request.form.get("item_title")
+        item_price = request.form.get("item_price")
+
+        if not item_title and not item_price:
+            return "At least one of item title or price must be provided.", 400
+
+        db, cursor = x.db()
+
+        # Build the query dynamically based on provided fields
+        query_update = "UPDATE items SET "
+        update_fields = []
+        values = []
+
+        if item_title:
+            update_fields.append("item_title = %s")
+            values.append(item_title)
+        if item_price:
+            update_fields.append("item_price = %s")
+            values.append(item_price)
+
+        query_update += ", ".join(update_fields) + " WHERE item_pk = %s AND restaurant_fk = %s"
+        values.extend([item_pk, restaurant_fk])
+
+        # Debugging: Check the query and values
+        print(f"Updating item: {query_update}, values: {values}")
+
+        cursor.execute(query_update, tuple(values))
+        db.commit()
+
+        print(f"Item {item_pk} successfully updated.")
+
+        # Redirect back to the restaurant dashboard
+        return redirect("/restaurant")
+
+    except Exception as ex:
+        print(f"Error editing item: {ex}")
+        if "db" in locals():
+            db.rollback()
+        return f"Error editing item: {ex}", 500
+    finally:
+        if "cursor" in locals():
+            cursor.close()
+        if "db" in locals():
+            db.close()
