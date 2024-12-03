@@ -3,6 +3,7 @@ from flask_session import Session
 from werkzeug.security import generate_password_hash
 from werkzeug.security import check_password_hash
 from PIL import Image
+from datetime import timedelta
 import x
 import uuid 
 import time
@@ -13,7 +14,11 @@ from icecream import ic
 ic.configureOutput(prefix=f'***** | ', includeContext=True)
 
 app = Flask(__name__)
-app.config['SESSION_TYPE'] = 'filesystem'  # or 'redis', etc.
+app.secret_key = 'my-secret-key'
+app.config['SESSION_TYPE'] = 'filesystem' # or 'redis'
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
+app.config['SESSION_FILE_DIR'] = '/tmp/flask_session'
 Session(app)
 
 @app.template_filter('strftime')
@@ -47,6 +52,8 @@ def optimize_image(file):
         raise e
 
 
+
+##############################
 def get_user_avatars(user_pk):
     avatar_dir = os.path.join('static', 'avatars')
     # Get all files that contain user_pk in their name
@@ -62,7 +69,26 @@ def get_user_avatars(user_pk):
     return sorted(avatars, key=lambda x: x['timestamp'], reverse=True)
 
 
-# app.secret_key = "your_secret_key"
+
+##############################
+def calculate_basket_totals(basket):
+    """
+    Calculate total price and quantity for basket items.
+    Returns a tuple of (total_price, total_items)
+    """
+    if not basket:
+        return 0.0, 0
+    
+    total_price = sum(
+        item.get("price", 0) * item.get("quantity", 0) 
+        for item in basket
+    )
+    total_items = sum(item.get("quantity", 0) for item in basket)
+    
+    return total_price, total_items
+
+
+
 
 ##############################
 ##############################
@@ -117,6 +143,8 @@ def view_index():
         prev_page = page - 1 if page > 1 else None
 
         user = session.get("user")
+        basket = session.get("basket", [])
+        total_price, _ = calculate_basket_totals(basket)
 
         coords = [
             {
@@ -134,7 +162,9 @@ def view_index():
             coords=coords,
             next_page=next_page,
             prev_page=prev_page,
-            user=user
+            user=user,
+            basket=basket,
+            total_price=total_price
         )
 
     except Exception as ex:
@@ -249,18 +279,6 @@ def view_create_password():
 
 
 ##############################
-@app.get("/partner")
-@x.no_cache
-def view_partner():
-    if not session.get("user", ""): 
-        return redirect(url_for("view_login"))
-    user = session.get("user")
-    if len(user.get("roles", "")) > 1:
-        return redirect(url_for("view_choose_role"))
-    return response
-
-
-##############################
 @app.get("/admin")
 @x.no_cache
 def view_admin():
@@ -269,6 +287,8 @@ def view_admin():
         return redirect(url_for("view_login"))
     
     user = session.get("user")
+    basket = session.get("basket", [])
+    total_price, _ = calculate_basket_totals(basket)
     
     # Check if user has admin role
     if not "admin" in user.get("roles", ""):
@@ -292,7 +312,7 @@ def view_admin():
         """)
         items = cursor.fetchall()
         
-        return render_template("view_admin.html", users=users, time=time, user=user, items=items)
+        return render_template("view_admin.html", users=users, time=time, user=user, items=items, basket=basket, total_price=total_price)
     finally:
         if 'cursor' in locals(): cursor.close()
         if 'db' in locals(): db.close()
@@ -308,6 +328,58 @@ def show_profile():
         return redirect(url_for("view_login"))
     avatars = get_user_avatars(session['user']['user_pk'])
     return render_template("view_profile.html",x=x, user=user, avatars=avatars, time=time)
+
+##############################
+
+@app.get("/checkout")
+def view_checkout():
+    try:
+        # Debug prints to see what we're working with
+        ic("User session:", session.get("user"))
+        ic("Basket contents:", session.get("basket"))
+        
+        if not session.get("user"):
+            return redirect(url_for("view_login"))
+            
+        basket = session.get("basket", [])
+        ic("Basket after get:", basket)
+        
+        if not basket:
+            return redirect(url_for("view_index"))
+        
+        # Get totals using helper function
+        total_price, total_items = calculate_basket_totals(basket)
+        ic("Calculated totals:", total_price, total_items)
+        
+        # Pass data to template
+        return render_template(
+            "view_checkout.html",
+            basket=basket,
+            total_price=total_price,
+            user=session.get("user")
+        )
+                             
+    except Exception as ex:
+        # Print the full error details
+        ic("Checkout error details:")
+        ic(type(ex))  # Show the type of exception
+        ic(str(ex))   # Show the error message
+        ic(ex)        # Show the full exception
+        
+        toast = render_template("___toast.html", message=f"Error accessing checkout: {str(ex)}")
+        return f"""<template mix-target="#toast">{toast}</template>""", 500
+
+##############################
+@app.get("/order-confirmation")
+def view_order_confirmation():
+    if not session.get("user"):
+        return redirect(url_for("view_login"))
+    
+    if not session.get("last_order"):
+        return redirect(url_for("view_index"))
+        
+    return render_template("view_order_confirmation.html", order=session.get("last_order"), user=session.get("user"))
+
 
 
 ##############################
@@ -1028,6 +1100,225 @@ def create_item():
         if "db" in locals(): db.close()    
 
 
+#############################################
+# Update the add_to_basket function to maintain consistent data structure
+@app.post("/add-to-basket/<item_pk>")
+def add_to_basket(item_pk):
+    try:
+        if not session.get("user"):
+            return """<template mix-redirect="/login"></template>"""
+
+            
+        # Get quantity from the form (menu item form)
+        quantity = int(request.form.get("quantity", 1))
+        if quantity < 1:
+            raise x.CustomException("Invalid quantity", 400)
+            
+        # Initialize basket if needed
+        if "basket" not in session:
+            session["basket"] = []
+        
+        # Get item details from database
+        db, cursor = x.db()
+        cursor.execute("""
+            SELECT item_pk, item_title, item_price 
+            FROM items 
+            WHERE item_pk = %s AND item_deleted_at = 0 AND item_blocked_at = 0
+        """, (item_pk,))
+        item = cursor.fetchone()
+        
+        if not item:
+            raise x.CustomException("Item not found", 404)
+
+        # Find if item already exists in basket
+        existing_item = next(
+            (item for item in session["basket"] if item["item_pk"] == item_pk), 
+            None
+        )
+                
+        if existing_item:
+            existing_item["quantity"] += quantity
+        else:
+            session["basket"].append({
+                "item_pk": item_pk,
+                "title": item["item_title"],
+                "price": float(item["item_price"]),
+                "quantity": quantity
+            })
+        
+        session.modified = True
+        
+        # Calculate totals
+        total_items = sum(item["quantity"] for item in session["basket"])
+        total_price = sum(item["price"] * item["quantity"] for item in session["basket"])
+        
+        # Render appropriate template
+        if session["basket"]:
+            basket_content = render_template("___basket_items.html", 
+                                          basket=session["basket"],
+                                          total_price=total_price)
+        else:
+            basket_content = render_template("___empty_basket.html")
+            
+        
+        return f"""
+            <template mix-target="#basket-count">
+                {total_items}
+            </template>
+            <template mix-target="#basket-content">
+                {basket_content}
+            </template>
+        """
+
+    except Exception as ex:
+        ic(ex)
+        if "db" in locals(): db.rollback()
+        if isinstance(ex, x.CustomException):
+            toast = render_template("___toast.html", message=ex.message)
+            return f"""<template mix-target="#toast">{toast}</template>""", ex.code
+        return """<template mix-target="#toast">System under maintenance</template>""", 500
+    finally:
+        if "cursor" in locals(): cursor.close()
+        if "db" in locals(): db.close()
+#############################################
+
+@app.post("/update-basket/<item_pk>")
+def update_basket_quantity(item_pk):
+    try:
+        if "basket" not in session:
+            raise x.CustomException("No basket found", 400)
+            
+        # Get change value from form hidden input
+        change = int(request.form.get("change", 0))
+        
+        # Find and update item in basket
+        item = next((item for item in session["basket"] if item["item_pk"] == item_pk), None)
+        if not item:
+            raise x.CustomException("Item not found in basket", 404)
+            
+        # Update quantity but don't let it go below 1
+        new_quantity = max(1, item["quantity"] + change)
+        item["quantity"] = new_quantity
+        
+        # Ensure session is marked as modified
+        session.modified = True
+        
+        # Calculate new totals using helper function
+        total_price, total_items = calculate_basket_totals(session["basket"])
+        
+        # Render updated basket content
+        basket_content = render_template("___basket_items.html", 
+                                      basket=session["basket"], 
+                                      total_price=total_price)
+            
+        # Return templates for ALL parts that need updating
+        return f"""
+            <template mix-target="#basket-count">{total_items}</template>
+            <template mix-target="#basket-content">{basket_content}</template>
+        """
+        
+    except Exception as ex:
+        ic(ex)
+        if isinstance(ex, x.CustomException):
+            toast = render_template("___toast.html", message=ex.message)
+            return f"""<template mix-target="#toast">{toast}</template>""", ex.code
+        return """<template mix-target="#toast">System under maintenance</template>""", 500
+
+#############################################
+
+@app.get("/remove-from-basket/<item_pk>")
+def remove_from_basket(item_pk):
+    try:
+        # Find and remove item from list
+        item = next((item for item in session["basket"] if item["item_pk"] == item_pk), None)
+        if not item:
+            raise x.CustomException("Item not found in basket", 404)
+            
+        session["basket"].remove(item)
+        session.modified = True
+        
+        # Calculate new totals
+        total_items = sum(item["quantity"] for item in session["basket"])
+        total_price = sum(item["price"] * item["quantity"] for item in session["basket"])
+        
+        if not session["basket"]:
+            basket_content = render_template("___empty_basket.html")
+        else:
+            basket_content = render_template("___basket_items.html", 
+                                          basket=session["basket"], 
+                                          total_price=total_price)
+            
+        
+        return f"""
+            <template mix-target="#basket-count">{total_items}</template>
+            <template mix-target="#basket-content">{basket_content}</template>
+        """
+        
+    except Exception as ex:
+        ic(ex)
+        if isinstance(ex, x.CustomException):
+            toast = render_template("___toast.html", message=ex.message)
+            return f"""<template mix-target="#toast">{toast}</template>""", ex.code
+        return """<template mix-target="#toast">System under maintenance</template>""", 500
+
+
+#############################################
+
+@app.post("/place-order")
+def place_order():
+    try:
+        if not session.get("user"):
+            return redirect(url_for("view_login"))
+            
+        if not session.get("basket"):
+            raise x.CustomException("No items in basket", 400)
+            
+        delivery_name = request.form.get("delivery_name")
+        delivery_email = request.form.get("delivery_email")
+        
+        # Use helper function for totals
+        total_price, _ = calculate_basket_totals(session["basket"])
+        
+        session["last_order"] = {
+            "items": session["basket"],  # No need for copy() since we're clearing the basket anyway
+            "total": total_price,
+            "customer_name": delivery_name,
+            "customer_email": delivery_email,
+            "order_date": int(time.time())
+        }
+        
+        email_body = f"""
+            <h1>Order Confirmation</h1>
+            <p>Hi {delivery_name},</p>
+            <p>Thank you for your order!</p>
+            <h2>Order Details:</h2>
+            <ul>
+            {''.join(f'<li>{item["title"]} x {item["quantity"]} - ${item["price"] * item["quantity"]:.2f}</li>' 
+                     for item in session["basket"])}
+            </ul>
+            <p><strong>Total: ${total_price:.2f}</strong></p>
+        """
+                                           
+        x.send_email(session["user"]["user_email"], 
+                    "Order Confirmation", 
+                    email_body)
+        
+        # Clear basket
+        session.pop("basket", None)
+        session.modified = True
+        
+        return """<template mix-redirect="/order-confirmation"></template>"""
+        
+    except Exception as ex:
+        ic(ex)
+        ic("Form data:", request.form)  # Debug print
+        if isinstance(ex, x.CustomException):
+            toast = render_template("___toast.html", message=ex.message)
+            return f"""<template mix-target="#toast">{toast}</template>""", ex.code
+        return f"""<template mix-target="#toast">System under maintenance: {str(ex)}</template>""", 500
+
+
+
 ##############################
 ##############################
 ##############################
@@ -1581,6 +1872,8 @@ def view_restaurant(restaurant_fk):
         items = cursor.fetchall()
 
         user = session.get("user")
+        basket = session.get("basket", [])
+        total_price, _ = calculate_basket_totals(basket)
 
         # Fetch coordinates associated with the restaurant
         query_coords = """SELECT coordinates 
@@ -1594,7 +1887,8 @@ def view_restaurant(restaurant_fk):
                                restaurant=restaurant, 
                                items=items, 
                                coords=coords,
-                               user=user)
+                               user=user,
+                               basket=basket, total_price=total_price)
     except Exception as ex:
         ic(ex)
         if "db" in locals(): db.rollback()

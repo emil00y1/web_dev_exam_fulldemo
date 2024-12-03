@@ -1,7 +1,7 @@
 {% if user %} {% include "_top_logged.html" %} {% else %} {% include "_top.html"
 %} {% endif %}
 
-<main class="w-95vw max-w-1200 mx-auto p-6">
+<main class="w-95vw max-w-1200 mx-auto p-6 h-full">
   <!-- Restaurant Details -->
   <div class="d-flex a-items-center mb-6">
     <img
@@ -38,7 +38,7 @@
               <!-- Minus button -->
               <button
                 type="button"
-                class="quantity-btn-decrease rounded-full cursor-pointer bg-c-transparent text-c-tealblue:-6 text-140 d-flex a-items-center h-min-content pa-3 cursor-not-allowed"
+                class="menu-quantity-decrease rounded-full cursor-pointer bg-c-transparent text-c-tealblue:-6 text-140 d-flex a-items-center h-min-content pa-3 cursor-not-allowed"
                 data-item-id="{{ item['item_pk'] }}"
                 parent
               >
@@ -61,14 +61,14 @@
                 id="quantity_{{ item['item_pk'] }}"
                 value="1"
                 readonly
-                class="quantity-input text-a-center border-0 bg-c-transparent max-w-14 text-c-tealblue:-6 text-w-semibold text-105"
+                class="menu-quantity-input text-a-center border-0 bg-c-transparent max-w-14 text-c-tealblue:-6 text-w-semibold text-105"
                 data-item-id="{{ item['item_pk'] }}"
               />
 
               <!-- Plus button -->
               <button
                 type="button"
-                class="quantity-btn-increase rounded-full cursor-pointer bg-c-transparent text-c-tealblue:-6 text-140 d-flex a-items-center h-min-content pa-3"
+                class="menu-quantity-increase rounded-full cursor-pointer bg-c-transparent text-c-tealblue:-6 text-140 d-flex a-items-center h-min-content pa-3"
                 data-item-id="{{ item['item_pk'] }}"
                 parent
               >
@@ -88,9 +88,7 @@
             </div>
 
             <!-- Add to order button -->
-            <button
-              mix-post="/add-to-order/{{ item['item_pk'] }}"
-              mix-data="#frm_add_to_order_{{ item['item_pk'] }}"
+            <button mix-post="/add-to-basket/{{ item['item_pk'] }}" mix-data="#frm_add_to_order_{{ item['item_pk'] }}"
               class="text-c-white bg-c-tealblue:-5 py-7 px-4 rounded-sm text-w-semibold d-flex a-items-center"
               hover="bg-c-tealblue:-8 cursor-pointer"
               focus="outline-1 outline-c-tealblue:-6 outline-o-0.5" data-base-price="{{ item['item_price'] }}"

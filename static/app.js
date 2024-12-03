@@ -6,21 +6,19 @@ function render_items(data) {
     marker.bindPopup(e.popup);
   });
 }
-
 // Quantity control handlers
 document.addEventListener("DOMContentLoaded", () => {
   // Handle decrease button clicks
   document.addEventListener("click", (e) => {
-    const decreaseBtn = e.target.closest(".quantity-btn-decrease");
+    const decreaseBtn = e.target.closest(".menu-quantity-decrease");
     if (decreaseBtn) {
       const itemId = decreaseBtn.dataset.itemId;
       updateQuantity(itemId, -1);
     }
   });
-
   // Handle increase button clicks
   document.addEventListener("click", (e) => {
-    const increaseBtn = e.target.closest(".quantity-btn-increase");
+    const increaseBtn = e.target.closest(".menu-quantity-increase");
     if (increaseBtn) {
       const itemId = increaseBtn.dataset.itemId;
       updateQuantity(itemId, 1);
@@ -30,24 +28,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function updateQuantity(itemId, change) {
   const decreaseBtn = document.querySelector(
-    `.quantity-btn-decrease[data-item-id="${itemId}"]`
+    `.menu-quantity-decrease[data-item-id="${itemId}"]`
   );
   const input = document.getElementById(`quantity_${itemId}`);
   const totalPriceSpan = document.getElementById(`total_price_${itemId}`);
   const button = totalPriceSpan.closest('button');
   const basePrice = parseFloat(button.dataset.basePrice);
-
   let value = parseInt(input.value) + change;
-
   if (value < 1) value = 1;
   input.value = value;
-
   if (value === 1) {
     decreaseBtn.classList.add("cursor-not-allowed");
   } else {
     decreaseBtn.classList.remove("cursor-not-allowed");
   }
-
   const total = basePrice * value;
   totalPriceSpan.textContent = total.toFixed(2);
 }

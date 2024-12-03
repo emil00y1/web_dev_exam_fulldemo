@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='mixhtml.css') }}">
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="{{url_for('static', filename='app.js')}}" defer></script>
+    <script src="{{url_for('static', filename='basket.js')}}" defer></script>
     <script src="https://unpkg.com/mojocss"></script>
     <title>Company</title>
 </head>
@@ -16,13 +17,40 @@
             <div class="text-c-black text-bold text-xl">
                 <a href="/" class="no-u-hover text-c-black">Company</a>
             </div>
-            
-
-            <!-- Avatar and Logout -->
+        
+            <!-- Avatar, Basket and Logout -->
             <div class="d-flex a-items-center gap-4">
                 {% if "admin" in user.get("roles", "") %}
                     <a href="/admin" class="text-c-tealblue:-6 py-2 px-1">Dashboard</a>
                 {% endif %}
+
+                <!-- Basket Dropdown -->
+                <div class="p-relative">
+                    <button 
+                        id="basket-button" 
+                        class="d-flex a-items-center gap-2 bg-c-tealblue:+45 text-c-tealblue:-6 py-2 px-3 rounded-sm cursor-pointer"
+                        hover="bg-c-tealblue:+40"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="24" height="24" class="fill-c-tealblue:-6">
+                            <path d="M280-80q-33 0-56.5-23.5T200-160q0-33 23.5-56.5T280-240q33 0 56.5 23.5T360-160q0 33-23.5 56.5T280-80Zm400 0q-33 0-56.5-23.5T600-160q0-33 23.5-56.5T680-240q33 0 56.5 23.5T760-160q0 33-23.5 56.5T680-80ZM246-720l96 200h280l110-200H246Zm-38-80h590q23 0 35 20.5t1 41.5L692-482q-11 20-29.5 31T622-440H324l-44 80h480v80H280q-45 0-68-39.5t-2-78.5l54-98-144-304H40v-80h130l38 80Zm134 280h280-280Z"/>
+                        </svg>
+                        <span id="basket-count" class="text-c-tealblue:-6">
+                            {{ session.get('basket', [])|sum(attribute='quantity') }}  
+                        </span>
+                    </button>
+
+                    <!-- Dropdown Content -->
+                    <div id="basket-dropdown" class="hidden p-absolute right-0 top-full mt-2 w-80 bg-c-white rounded-sm shadow-md border-1 border-c-gray:+80 z-10">
+                        <div id="basket-content" class="d-flex flex-col pa-4">
+                            {% if session.get('basket') %}
+                                {% include "___basket_items.html" with context %}
+                            {% else %}
+                                {% include "___empty_basket.html" with context %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
                 <a href="/profile" class="d-flex a-items-center">
                     <img src="{{ url_for('static', filename='avatars/' + user['user_avatar']) if user['user_avatar'] else url_for('static', filename='avatars/default_avatar.webp') }}" alt="User Avatar" class="w-12 h-12 rounded-full obj-f-cover">
                 </a>

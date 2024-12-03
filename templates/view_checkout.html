@@ -1,0 +1,65 @@
+{% include "_top_logged.html" %}
+<main class="w-full mx-auto pa-6 h-full">
+    <div class="d-flex flex-col max-w-600px mx-auto">
+        <h1 class="text-2xl text-w-bold mb-6">Checkout</h1>
+        <!-- Order Summary -->
+        <div class="bg-c-white pa-6 rounded-sm shadow-sm mb-6">
+            <h2 class="text-xl text-w-bold mb-4">Order Summary</h2>
+            {% for item in basket %}
+            <div class="d-flex j-content-between py-3 border-b-1 border-c-gray:+80">
+                <div>
+                    <p class="text-w-bold">{{ item.title }}</p>
+                    <p class=" text-sm">Quantity: {{ item.quantity }}</p>
+                </div>
+                <div class="text-a-right">
+                    <p>${{ "%.2f"|format(item.price * item.quantity) }}</p>
+                </div>
+            </div>
+            {% endfor %}
+            <div class="mt-4">
+                <div class="d-flex j-content-between text-w-bold text-lg">
+                    <span>Total</span>
+                    <span>${{ "%.2f"|format(total_price) }}</span>
+                </div>
+            </div>
+        </div>
+        <!-- Delivery Details -->
+        <div class="bg-c-white pa-6 rounded-sm shadow-sm">
+            <h2 class="text-xl text-w-bold mb-4">Order Details</h2>
+           
+            <form id="frm_checkout" class="d-flex flex-col gap-4">
+                <!-- Name -->
+                <div class="d-flex flex-col">
+                    <label for="delivery_name" class="mb-1">Full Name</label>
+                    <input
+                        type="text"
+                        id="delivery_name"
+                        name="delivery_name"
+                        value="{{ user.user_name }} {{ user.user_last_name }}"
+                        focus="outline-1 outline-c-tealblue:-6 outline-o-0.5"
+                    >
+                </div>
+                <div class="d-flex flex-col">
+                    <label for="delivery_email" class="mb-1">Email</label>
+                    <input
+                        type="text"
+                        id="delivery_email"
+                        name="delivery_email"
+                        value="{{ user.user_email }}"
+                        focus="outline-1 outline-c-tealblue:-6 outline-o-0.5"
+                    >
+                </div>
+                <!-- Submit Button -->
+                <button
+                    mix-post="/place-order"
+                    mix-data="#frm_checkout"
+                    class="mt-4 w-full py-3 bg-c-tealblue:-5 text-c-white rounded-sm"
+                    hover="bg-c-tealblue:-8 cursor-pointer"
+                >
+                    Place Order - ${{ "%.2f"|format(total_price) }}
+                </button>
+            </form>
+        </div>
+    </div>
+</main>
+{% include "_bottom.html" %}

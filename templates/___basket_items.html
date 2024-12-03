@@ -1,0 +1,83 @@
+{% for item in basket %}
+    <div class="d-flex flex-col  py-2 border-b-1 border-c-gray:+10">
+        <div class="d-flex w-full j-content-between">
+            <p class="text-w-semibold text-110">{{ item.title }}</p>
+            <p class="text-w-semibold">$<span id="basket_item_total_{{ item.item_pk }}">{{ "%.2f"|format(item.price * item.quantity) }}</span></p>
+
+         
+        </div>
+        <div class="d-flex w-full j-content-between mt-1">
+               <div>
+                <div class="d-flex a-items-center bg-c-tealblue:+46 rounded-sm w-fit-content">
+                    <!-- Decrease form -->
+                    <form id="frm_decrease_{{ item.item_pk }}">
+                        <input type="hidden" name="change" value="-1">
+                        <button
+                            type="button"
+                            mix-post="/update-basket/{{ item.item_pk }}"
+                            mix-data="#frm_decrease_{{ item.item_pk }}"
+                            {% if item.quantity <= 1 %}disabled{% endif %}
+                            class="basket-quantity-decrease rounded-full cursor-pointer bg-c-transparent text-c-tealblue:-6 text-140 d-flex a-items-center h-min-content pa-3 {% if item.quantity <= 1 %}cursor-not-allowed{% endif %}"
+                            data-item-id="{{ item.item_pk }}"
+                            data-item-price="{{ item.price }}"
+                        >
+                            <svg
+                                class="fill-c-tealblue:-6"
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 -960 960 960"
+                                width="20px"
+                                height="20px"
+                            >
+                                <path d="M200-440v-80h560v80H200Z" />
+                            </svg>
+                        </button>
+                    </form>
+                    
+                    <!-- Quantity display -->
+                    <span
+                        id="basket_quantity_{{ item.item_pk }}"
+                        class="basket-quantity-display text-a-center border-0 bg-c-transparent min-w-14 text-c-tealblue:-6 text-w-semibold text-105"
+                    >{{ item.quantity }}</span>
+                    
+                    <!-- Increase form -->
+                    <form id="frm_increase_{{ item.item_pk }}">
+                        <input type="hidden" name="change" value="1">
+                        <button
+                            type="button"
+                            mix-post="/update-basket/{{ item.item_pk }}"
+                            mix-data="#frm_increase_{{ item.item_pk }}"
+                            class="basket-quantity-increase rounded-full cursor-pointer bg-c-transparent text-c-tealblue:-6 text-140 d-flex a-items-center h-min-content pa-3"
+                            data-item-id="{{ item.item_pk }}"
+                            data-item-price="{{ item.price }}"
+                        >
+                            <svg
+                                class="fill-c-tealblue:-6"
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 -960 960 960"
+                                height="20px"
+                                width="20px"
+                            >
+                                <path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z" />
+                            </svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <button
+                type="button"
+                mix-get="/remove-from-basket/{{ item.item_pk }}"
+                
+                hover="bg-c-red:-14 text-c-white:-6 cursor-pointer"
+            >Remove</button>
+        </div>
+    </div>
+{% endfor %}
+<div class="mt-4 pt-2 border-t-1 border-c-gray:+80">
+    <div class="d-flex j-content-between text-w-bold">
+        <span>Total</span>
+        <span>$<span id="basket_total">{{ "%.2f"|format(total_price) }}</span></span>
+    </div>
+    <a href="/checkout" class="d-flex w-full j-content-center a-items-center mt-4 py-2 bg-c-tealblue:-5 text-c-white rounded-sm " hover="bg-c-tealblue:-8">
+        Checkout
+    </a>
+</div>
