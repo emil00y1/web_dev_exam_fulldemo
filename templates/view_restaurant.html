@@ -1,7 +1,6 @@
 {% include "_top.html" %} 
 
-<main class="w-95vw max-w-1200 mx-auto p-6 h-full">
-  <!-- Restaurant Details -->
+<main class="mx-4" md="mx-6" lg="mx-8">
   <div class="d-flex a-items-center mb-6">
     <img
       src="{{ url_for('static', filename='avatars/' + restaurant['user_avatar']) if restaurant['user_avatar'] else url_for('static', filename='avatars/profile_1.jpg') }}"
@@ -17,19 +16,19 @@
   </div>
 
   <!-- Restaurant Items -->
-  <h2 class="text-xl mb-4">Menu Items</h2>
+  <h2 class="text-xl mb-4 text-c-tealblue:-10 text-w-semibold">Menu</h2>
   {% if items %}
-  <div class="d-grid cols-2 gap-4">
+  <div class="d-flex flex-col gap-6" sm="d-grid cols-2" md="cols-3">
     {% for item in items %}
     <article
-      class="rounded-sm pa-4 border-2 border-s-solid border-c-tealblue:-3 shadow-sm"
+      class="rounded-md pa-4 shadow-md"
     >
       <div>
-        <h3 class="text-c-black text-lg font-bold">{{ item['item_title'] }}</h3>
+        <h3 class="text-c-black:+23 text-xl text-w-semibold">{{ item['item_title'] }}</h3>
         <p class="text-c-gray">Price: ${{ item['item_price'] }}</p>
 
         <!-- Order form with quantity selector -->
-        <form id="frm_add_to_order_{{ item['item_pk'] }}" class="mt-4">
+        <form id="frm_add_to_order_{{ item['item_pk'] }}" class="mt-4 w-full d-flex j-content-end">
           <div class="d-flex a-items-center gap-2">
             <div
               class="d-flex a-items-center bg-c-tealblue:+46 rounded-sm pa-1"
