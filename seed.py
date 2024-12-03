@@ -102,12 +102,12 @@ def insert_item(item):
         VALUES (%s, %s, %s, %s, %s, %s, %s)
     """, (item["item_pk"], item["restaurant_fk"], item["item_title"], item["item_price"],item["item_deleted_at"],item["item_blocked_at"], item["item_updated_at"]))
 
-def insert_item_image(item_image):
+def insert_item_image(image):
     # Insert the item into the items table
     cursor.execute("""
         INSERT INTO items_image (item_fk, image)
         VALUES (%s, %s)
-    """, (item_image["item_fk"], item_image["image"]))
+    """, (image["item_fk"], image["image"]))
 
 def insert_coords(coord):
     try:
