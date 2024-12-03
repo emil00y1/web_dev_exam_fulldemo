@@ -102,6 +102,13 @@ def insert_item(item):
         VALUES (%s, %s, %s, %s, %s, %s, %s)
     """, (item["item_pk"], item["restaurant_fk"], item["item_title"], item["item_price"],item["item_deleted_at"],item["item_blocked_at"], item["item_updated_at"]))
 
+def insert_item_image(item_image):
+    # Insert the item into the items table
+    cursor.execute("""
+        INSERT INTO items_image (item_fk, image)
+        VALUES (%s, %s)
+    """, (item_image["item_fk"], item_image["image"]))
+
 def insert_coords(coord):
     try:
         cursor.execute("""
@@ -124,6 +131,7 @@ try:
     
     ##############################
   # Drop the items table before dropping the users table
+    cursor.execute("DROP TABLE IF EXISTS items_image")
     cursor.execute("DROP TABLE IF EXISTS items")
     cursor.execute("DROP TABLE IF EXISTS coords")
  
@@ -188,6 +196,16 @@ try:
     item_updated_at INTEGER UNSIGNED,
     PRIMARY KEY(item_pk),
     FOREIGN KEY(restaurant_fk) REFERENCES users(user_pk)
+    );
+    """
+    cursor.execute(q)
+
+    cursor.execute("DROP TABLE IF EXISTS items_image")
+    q = """
+        CREATE TABLE items_image (
+    item_fk CHAR(36),
+    image VARCHAR(100),
+    FOREIGN KEY(item_fk) REFERENCES items(item_pk)
     );
     """
     cursor.execute(q)
@@ -435,7 +453,6 @@ try:
                     "item_updated_at": 0,
                 }
                 insert_item(item)
-                
 
 
 # Seed coords only if the user is a restaurant
