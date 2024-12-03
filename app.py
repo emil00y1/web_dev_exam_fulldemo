@@ -1928,15 +1928,13 @@ def restaurant_dashboard():
             return f"""<template mix-target="#toast">{toast}</template>""", 404
 
         # Fetch items associated with the restaurant
-        query_items = """SELECT item_pk, item_title, item_price 
+        query_items = """SELECT item_pk, item_title, item_price, item_updated_at 
                          FROM items 
                          WHERE restaurant_fk = %s 
                          AND item_deleted_at = 0 
                          AND item_blocked_at = 0"""
         cursor.execute(query_items, (restaurant_fk,))
         items = cursor.fetchall()
-
-        user = session.get("user")
 
         # Fetch coordinates associated with the restaurant
         query_coords = """SELECT coordinates 
@@ -1952,6 +1950,7 @@ def restaurant_dashboard():
             items=items,
             coords=coords,
             user=user,
+            time=time,
         )
 
     except Exception as ex:
@@ -1993,8 +1992,8 @@ def add_item():
         db, cursor = x.db()
 
         # Insert the new item
-        query_add_item = """INSERT INTO items (item_pk, restaurant_fk, item_title, item_price, item_deleted_at, item_blocked_at) 
-                            VALUES (%s, %s, %s, %s, 0, 0)"""
+        query_add_item = """INSERT INTO items (item_pk, restaurant_fk, item_title, item_price, item_deleted_at, item_blocked_at, item_updated_at) 
+                            VALUES (%s, %s, %s, %s, 0, 0, 0)"""
         cursor.execute(query_add_item, (item_pk, restaurant_fk, item_title, item_price))
         db.commit()
 
@@ -2013,6 +2012,7 @@ def add_item():
             cursor.close()
         if "db" in locals():
             db.close()
+
 
 
 @app.post("/restaurant/delete_item/<item_pk>")
@@ -2062,7 +2062,6 @@ def delete_item(item_pk):
         if "db" in locals():
             db.close()
 
-
 @app.post("/restaurant/edit_item/<item_pk>")
 def edit_item(item_pk):
     try:
@@ -2098,11 +2097,12 @@ def edit_item(item_pk):
             update_fields.append("item_price = %s")
             values.append(item_price)
 
+        # Set item_updated_at to current timestamp (in seconds)
+        update_fields.append("item_updated_at = %s")
+        values.append(int(time.time()))  # Current Unix timestamp
+
         query_update += ", ".join(update_fields) + " WHERE item_pk = %s AND restaurant_fk = %s"
         values.extend([item_pk, restaurant_fk])
-
-        # Debugging: Check the query and values
-        print(f"Updating item: {query_update}, values: {values}")
 
         cursor.execute(query_update, tuple(values))
         db.commit()
