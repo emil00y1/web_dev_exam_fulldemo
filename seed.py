@@ -98,9 +98,9 @@ coords_list = [
 def insert_item(item):
     # Insert the item into the items table
     cursor.execute("""
-        INSERT INTO items (item_pk, restaurant_fk, item_title, item_price, item_deleted_at, item_blocked_at)
-        VALUES (%s, %s, %s, %s, %s, %s)
-    """, (item["item_pk"], item["restaurant_fk"], item["item_title"], item["item_price"],item["item_deleted_at"],item["item_blocked_at"]))
+        INSERT INTO items (item_pk, restaurant_fk, item_title, item_price, item_deleted_at, item_blocked_at, item_updated_at)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+    """, (item["item_pk"], item["restaurant_fk"], item["item_title"], item["item_price"],item["item_deleted_at"],item["item_blocked_at"], item["item_updated_at"]))
 
 def insert_coords(coord):
     try:
@@ -185,6 +185,7 @@ try:
     item_price DECIMAL(5,2),
     item_deleted_at INTEGER UNSIGNED,
     item_blocked_at INTEGER UNSIGNED,
+    item_updated_at INTEGER UNSIGNED,
     PRIMARY KEY(item_pk),
     FOREIGN KEY(restaurant_fk) REFERENCES users(user_pk)
     );
@@ -430,7 +431,8 @@ try:
                     "item_title": random.choice(food_names),
                     "item_price": round(random.uniform(5, 30)),  # Random price between 5 and 30
                     "item_deleted_at": 0,
-                    "item_blocked_at": 0
+                    "item_blocked_at": 0,
+                    "item_updated_at": 0,
                 }
                 insert_item(item)
                 
