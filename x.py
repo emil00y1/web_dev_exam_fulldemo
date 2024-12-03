@@ -1,3 +1,4 @@
+from dotenv import load_dotenv
 from flask import request, make_response
 from functools import wraps
 import mysql.connector
@@ -11,6 +12,9 @@ from email.mime.text import MIMEText
 
 from icecream import ic
 ic.configureOutput(prefix=f'***** | ', includeContext=True)
+
+pythonanywhere = '/home/emil00y1/web_dev_exam_fulldemo'
+
 
 UNSPLASH_ACCESS_KEY = 'YOUR_KEY_HERE'
 ADMIN_ROLE_PK = "16fd2706-8baf-433b-82eb-8c7fada847da"
@@ -36,10 +40,10 @@ def raise_custom_exception(error, status_code):
 ##############################
 def db():
     db = mysql.connector.connect(
-        host="mysql",      # Replace with your MySQL server's address or docker service name "mysql"
-        user="root",  # Replace with your MySQL username
-        password="password",  # Replace with your MySQL password
-        database="company"   # Replace with your MySQL database name
+        host=os.getenv('DB_HOST'),
+        user=os.getenv('DB_USER'),
+        password=os.getenv('DB_PASSWORD'),
+        database=os.getenv('DB_NAME')
     )
     cursor = db.cursor(dictionary=True)
     return db, cursor
@@ -123,7 +127,7 @@ def validate_uuid4(uuid4 = ""):
     return uuid4
 
 ##############################
-UPLOAD_ITEM_FOLDER = './images'
+UPLOAD_ITEM_FOLDER = os.getenv('ITEM_IMAGES_FOLDER')
 ALLOWED_ITEM_FILE_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
 
 def validate_item_image():
@@ -143,8 +147,8 @@ def validate_item_image():
 ##############################
 def send_email(recipient_email, subject, body, is_html=True):
     try:
-        sender_email = "emil00y1demomail@gmail.com"
-        password = "nyqb qyqw nvtw blas"
+        sender_email = os.getenv('EMAIL_SENDER')
+        password = os.getenv('EMAIL_PASSWORD')
 
         message = MIMEMultipart()
         message["From"] = "Wolt Demo"

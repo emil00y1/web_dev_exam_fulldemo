@@ -1,1 +1,5 @@
-__pycache__
+# .gitignore
+.env
+flask_session/
+*.pyc
+__pycache__/
