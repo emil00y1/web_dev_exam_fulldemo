@@ -1,4 +1,4 @@
-from dotenv import load_dotenv
+from config import config  # Import our configuration
 from flask import request, make_response
 from functools import wraps
 import mysql.connector
@@ -39,12 +39,8 @@ def raise_custom_exception(error, status_code):
 
 ##############################
 def db():
-    db = mysql.connector.connect(
-        host=os.getenv('DB_HOST'),
-        user=os.getenv('DB_USER'),
-        password=os.getenv('DB_PASSWORD'),
-        database=os.getenv('DB_NAME')
-    )
+    """Database connection factory using environment-specific configuration"""
+    db = mysql.connector.connect(**config.DB_CONFIG)
     cursor = db.cursor(dictionary=True)
     return db, cursor
 
@@ -147,8 +143,8 @@ def validate_item_image():
 ##############################
 def send_email(recipient_email, subject, body, is_html=True):
     try:
-        sender_email = os.getenv('EMAIL_SENDER')
-        password = os.getenv('EMAIL_PASSWORD')
+        sender_email = config.EMAIL_SENDER
+        password = config.EMAIL_PASSWORD
 
         message = MIMEMultipart()
         message["From"] = "Wolt Demo"

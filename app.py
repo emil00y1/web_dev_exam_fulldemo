@@ -1,29 +1,23 @@
-from dotenv import load_dotenv
 from flask import Flask, session, render_template, redirect, url_for, make_response, request, redirect
 from flask_session import Session
 from werkzeug.security import generate_password_hash
 from werkzeug.security import check_password_hash
 from PIL import Image
-from datetime import timedelta
 import x
 import uuid 
 import time
 import redis
 import os, io
+from config import config  # Import our configuration
 
 from icecream import ic
 ic.configureOutput(prefix=f'***** | ', includeContext=True)
 
-load_dotenv()
 
 
 
 app = Flask(__name__)
-app.secret_key = os.getenv('FLASK_SECRET_KEY')
-app.config['SESSION_TYPE'] = 'filesystem' # or 'redis'
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
-app.config['SESSION_FILE_DIR'] = os.getenv('SESSION_FILE_DIR')
+app.config.from_object(config)
 Session(app)
 
 @app.template_filter('strftime')
