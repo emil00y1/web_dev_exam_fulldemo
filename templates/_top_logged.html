@@ -23,7 +23,9 @@
                 {% if "admin" in user.get("roles", "") %}
                     <a href="/admin" class="text-c-tealblue:-6 py-2 px-1">Dashboard</a>
                 {% endif %}
-
+                {% if "restaurant" in user.get("roles", "") %}
+                    <a href="/restaurant" class="text-c-tealblue:-6 py-2 px-1">Dashboard</a>
+                {% endif %}
                 <!-- Basket Dropdown -->
                 <div class="p-relative">
                     <button 
@@ -51,6 +53,7 @@
                     </div>
                 </div>
 
+                
                 <a href="/profile" class="d-flex a-items-center">
                     <img src="{{ url_for('static', filename='avatars/' + user['user_avatar']) if user['user_avatar'] else url_for('static', filename='avatars/default_avatar.webp') }}" alt="User Avatar" class="w-12 h-12 rounded-full obj-f-cover">
                 </a>
