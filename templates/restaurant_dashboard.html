@@ -50,6 +50,10 @@
                         alt="Item Image"
                         class="gallery-image w-32 h-32 object-cover rounded-md shadow-sm"
                     />
+                    <form method="POST" action="{{ url_for('delete_item_image', item_pk=item['item_pk'], image_filename=img) }}" style="display: inline;">
+                        <button type="submit" class="text-c-red">Delete</button>
+                    </form>
+                    
                 {% endfor %}
             {% endif %}
         {% endfor %}

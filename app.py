@@ -1975,7 +1975,6 @@ def view_restaurant(restaurant_fk):
 
 
 #######################################################
-
 @app.get("/restaurant")
 @x.no_cache
 def restaurant_dashboard():
@@ -2012,7 +2011,7 @@ def restaurant_dashboard():
         cursor.execute(query_items, (restaurant_fk,))
         items = cursor.fetchall()
 
-        # Fetch images for the items
+        # Fetch images for the items (we'll use the image filename here)
         item_images = {}
         if items:
             item_pks = [item['item_pk'] for item in items]
@@ -2023,11 +2022,11 @@ def restaurant_dashboard():
             cursor.execute(query_images, tuple(item_pks))
             images = cursor.fetchall()
 
-            # Populate the item_images dictionary
             for img in images:
-                if img['item_fk'] not in item_images:
-                    item_images[img['item_fk']] = []
-                item_images[img['item_fk']].append(img['image'])
+                item_fk = img['item_fk']
+                if item_fk not in item_images:
+                    item_images[item_fk] = []
+                item_images[item_fk].append(img['image'])  # Store the image filename
 
         # Fetch coordinates associated with the restaurant
         query_coords = """SELECT coordinates 
@@ -2041,17 +2040,17 @@ def restaurant_dashboard():
             "restaurant_dashboard.html",
             restaurant=restaurant,
             items=items,
-            item_images=item_images,  # Now populated with item images
+            item_images=item_images,
             coords=coords,
             user=user,
             time=time,
         )
 
     except Exception as ex:
-        print("Error loading restaurant dashboard:", ex)
+        print("Error loading restaurant dashboard:", ex)  # Log the actual error
         if "db" in locals():
             db.rollback()
-        return "Error loading restaurant dashboard.", 500
+        return f"Error loading restaurant dashboard: {ex}", 500
     finally:
         if "cursor" in locals():
             cursor.close()
@@ -2277,6 +2276,46 @@ def add_item_image(item_pk):
             db.rollback()
         return f"Error adding item image: {ex}", 500
 
+    finally:
+        if "cursor" in locals():
+            cursor.close()
+        if "db" in locals():
+            db.close()
+
+#####
+
+@app.post("/items/<item_pk>/delete_image/<image_filename>")
+def delete_item_image(item_pk, image_filename):
+    try:
+        # Ensure the user is logged in
+        user = session.get("user")
+        if not user:
+            return "Please log in to delete an image.", 401
+
+        # Ensure the user has the role "restaurant"
+        if "restaurant" not in user.get("roles", []):
+            return "Access restricted to restaurant users only.", 403
+
+        # Ensure the file exists and delete it
+        image_path = os.path.join('static', 'dishes', image_filename)
+        if os.path.exists(image_path):
+            os.remove(image_path)
+
+        # Now delete the image record from the database
+        db, cursor = x.db()
+        query_delete_image = """DELETE FROM items_image 
+                                WHERE item_fk = %s AND image = %s"""
+        cursor.execute(query_delete_image, (item_pk, image_filename))
+        db.commit()
+
+        print(f"Image {image_filename} deleted for item {item_pk}.")
+        return redirect(url_for('restaurant_dashboard'))
+
+    except Exception as ex:
+        print(f"Error deleting image {image_filename} for item {item_pk}: {ex}")
+        if "db" in locals():
+            db.rollback()
+        return f"Error deleting image {image_filename} for item {item_pk}: {ex}", 500
     finally:
         if "cursor" in locals():
             cursor.close()

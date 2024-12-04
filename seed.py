@@ -94,9 +94,9 @@ def insert_item(item):
 def insert_item_image(image):
     # Insert the item into the items table
     cursor.execute("""
-        INSERT INTO items_image (item_fk, image, image_deleted_at)
-        VALUES (%s, %s, %s)
-    """, (image["item_fk"], image["image"], image["image_deleted_at"]))
+        INSERT INTO items_image (item_fk, image)
+        VALUES (%s, %s)
+    """, (image["item_fk"], image["image"]))
 
 def insert_coords(coord):
     try:
@@ -194,7 +194,6 @@ try:
         CREATE TABLE items_image (
     item_fk CHAR(36),
     image VARCHAR(100),
-    image_deleted_at INTEGER UNSIGNED,
     FOREIGN KEY(item_fk) REFERENCES items(item_pk)
     );
     """
@@ -469,7 +468,6 @@ try:
             image = {
             "item_fk": item_pk,
             "image": "dish_" + str(random.randint(1, 100)) + ".jpg",
-            "image_deleted_at": 0,
             }
         insert_item_image(image)  # Insert the image into the database
 
