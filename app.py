@@ -54,7 +54,7 @@ def optimize_image(file):
 
 ##############################
 def get_user_avatars(user_pk):
-    avatar_dir = os.path.join('static', 'avatars')
+    avatar_dir = config.AVATAR_FOLDER
     # Get all files that contain user_pk in their name
     avatars = []
     for filename in os.listdir(avatar_dir):
@@ -221,6 +221,7 @@ def view_login():
         "new_password": "You have successfully created a new password. Please login."
     }
     
+    email = request.args.get("email")
     msg = request.args.get("msg")
     display_message = messages.get(msg, "")
     
@@ -228,9 +229,60 @@ def view_login():
         "view_login.html", 
         x=x, 
         title="Login", 
-        message=display_message
+        message=display_message,
+        email=email,
+        msg=msg
     )
 
+
+
+@app.get("/resend-verification/<email>")
+@x.no_cache
+def resend_verification(email):
+    try:
+        db, cursor = x.db()
+        
+        cursor.execute("""
+            SELECT user_verification_key
+            FROM users
+            WHERE user_email = %s AND user_verified_at = 0
+        """, (email,))
+        result = cursor.fetchone()
+        
+        if not result:
+            toast = render_template("___toast.html", message="No unverified account found with this email")
+            return f"""<template mix-target="#toast">{toast}</template>""", 404
+            
+        try:
+            verification_key = result["user_verification_key"]
+            email_body = f"""To verify your account, please <a href="{config.DOMAIN}/verify/{verification_key}">click here</a>"""
+            x.send_email(email, "Please verify your account", email_body)
+            return "", 200
+            
+        except Exception as e:
+            ic(e)  # Using project's debug print pattern
+            toast = render_template("___toast.html", message=result)
+            return f"""<template mix-target="#toast">{toast}</template>""", 500
+            
+    except Exception as ex:
+        ic(ex)
+        if "db" in locals(): db.rollback()
+        
+        if isinstance(ex, x.CustomException):
+            toast = render_template("___toast.html", message=ex.message)
+            return f"""<template mix-target="#toast">{toast}</template>""", ex.code
+            
+        if isinstance(ex, x.mysql.connector.Error):
+            ic(ex)
+            toast = render_template("___toast.html", message="Database error")
+            return f"""<template mix-target="#toast">{toast}</template>""", 500
+            
+        toast = render_template("___toast.html", message="System under maintenance")
+        return f"""<template mix-target="#toast">{toast}</template>""", 500
+        
+    finally:
+        if "cursor" in locals(): cursor.close()
+        if "db" in locals(): db.close()
 
 @app.get("/passwordrecovery")
 @x.no_cache
@@ -706,7 +758,7 @@ def signup():
         db.commit()
 
 
-        return """<template mix-redirect="/login?msg=verify_email"></template>""", 201
+        return f"""<template mix-redirect="/login?msg=verify_email&email={user_email}"></template>""", 201
     
     except Exception as ex:
         ic(ex)

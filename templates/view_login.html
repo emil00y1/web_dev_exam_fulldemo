@@ -4,13 +4,23 @@
 
     <section class="mx-auto max-w-100 pb-16" sm="mt-8" md="d-flex flex-col h-full j-content-center">
         <h1 class="mb-2">Login</h1>
-        <p class="mb-2">Don't have an account? <a href="{{url_for('view_signup')}}" class="text-c-black text-d-underline text-c-inherit" hover="text-c-tealblue:-6" focus="outline-1 outline-c-tealblue:-6">Signup</a></p>
-        <form id="frm_user_login" class="d-flex flex-col gap-4 ">
+        <p >Don't have an account? <a href="{{url_for('view_signup')}}" class="text-c-black text-d-underline text-c-inherit" hover="text-c-tealblue:-6" focus="outline-1 outline-c-tealblue:-6">Signup</a></p>
             {% if message %}    
                 <p class="text-c-green text-110 text-w-semibold">
                     {{ message }}
                 </p>
+                {% if msg == 'verify_email' and email %}
+                    <button 
+                        mix-get="/resend-verification/{{ email }}"
+                        class="text-c-inherit text-d-underline bg-transparent cursor-pointer a-self-start pa-0 h-min-content mb-4"
+                        hover="text-c-tealblue:-6"
+                    >
+                        Resend email
+                    </button>
+                {% endif %}
             {% endif %}
+        <form id="frm_user_login" class="d-flex flex-col gap-4 mt-2">
+
             <div class="d-flex flex-col">
                 <label for="user_email">
                     <span>E-mail</span>
