@@ -95,7 +95,7 @@ def insert_item_image(image):
     # Insert the item into the items table
     cursor.execute("""
         INSERT INTO items_image (item_fk, image, image_deleted_at)
-        VALUES (%s, %s)
+        VALUES (%s, %s, %s)
     """, (image["item_fk"], image["image"], image["image_deleted_at"]))
 
 def insert_coords(coord):
