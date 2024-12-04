@@ -1,7 +1,12 @@
-<button
-class="bg-c-green:-10 text-c-body px-3rounded-sm cursor-pointer mt-2" sm="mt-0"
-hover="bg-c-green:-16"
-id="unblock-{{ item['item_pk'] }}"
-mix-get="/items/unblock/{{ item['item_pk'] }}">
-Unblock
-</button>
+<form id="unblock-form-{{item['item_pk']}}" class="m-0">
+   <input type="hidden" name="item_pk" value="{{item['item_pk']}}">
+   <button
+       class="bg-c-green:-10 text-c-body px-3 rounded-sm cursor-pointer mt-2"
+       sm="mt-0"
+       hover="bg-c-green:-16"
+       id="unblock-{{item['item_pk']}}"
+       mix-put="/items/unblock/{{item['item_pk']}}"
+       mix-data="#unblock-form-{{item['item_pk']}}">
+       Unblock
+   </button>
+</form>

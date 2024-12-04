@@ -43,10 +43,19 @@
                                         {% endif %}
             
                                         {% if user["user_deleted_at"] == 0 %}
-                                            <button class="bg-none px-3 rounded-sm cursor-pointer text-100 mt-2" sm="mt-0" hover="bg-c-white:-14 {% if loop.index is odd %}bg-c-white:-6{% endif %}"
-                                                title="Delete User" mix-get="/users/delete/{{user['user_pk']}}">
-                                                Delete user
-                                            </button>
+                                            <form id="delete-form-{{user['user_pk']}}" class="m-0">
+                                                <input type="hidden" name="user_pk" value="{{user['user_pk']}}">
+                                                <button 
+                                                    class="bg-none px-3 rounded-sm cursor-pointer text-100 mt-2" 
+                                                    sm="mt-0" 
+                                                    hover="bg-c-white:-14 {% if loop.index is odd %}bg-c-white:-6{% endif %}"
+                                                    title="Delete User" 
+                                                    mix-put="/users/delete/{{user['user_pk']}}"
+                                                    mix-data="#delete-form-{{user['user_pk']}}"
+                                                >
+                                                    Delete user
+                                                </button>
+                                            </form>
                                         {% else %}
                                             {% set user_deleted_at = time.localtime(user['user_deleted_at'])|strftime('%A, %d %B %Y') %}
                                             <div class="d-flex a-items-center text-100 text-c-red:-14">Deleted: {{ user_deleted_at }}</div>
@@ -78,7 +87,7 @@
                                             <span md="d-none">Restaurant: </span>{{ item["restaurant_name"] }}
                                         </div>
                                         <div class="py-1 flex-1 text-sm a-content-center text-100 text-c-tealblue:-8 text-w-semibold">
-                                            DKK {{ item["item_price"] }}
+                                            ${{ item["item_price"] }}
                                         </div>
                                    </div>
                                    <div id="actions-{{item['item_pk']}}" class="d-flex a-items-center gap-2" sm="j-content-end col-2" md="col-2">
@@ -91,10 +100,19 @@
                                         {% endif %}
             
                                         {% if item["item_deleted_at"] == 0 %}
-                                            <button class="bg-none px-3 rounded-sm cursor-pointer text-100 mt-2" sm="mt-0" hover="bg-c-white:-14 {% if loop.index is odd %}bg-c-white:-6{% endif %}"
-                                                title="Delete Item" mix-get="/items/delete/{{item['item_pk']}}">
-                                                Delete item
-                                            </button>
+                                            <form id="delete-form-{{item['item_pk']}}" class="m-0">
+                                                <input type="hidden" name="item_pk" value="{{item['item_pk']}}">
+                                                <button 
+                                                    class="bg-none px-3 rounded-sm cursor-pointer text-100 mt-2" 
+                                                    sm="mt-0" 
+                                                    hover="bg-c-white:-14 {% if loop.index is odd %}bg-c-white:-6{% endif %}"
+                                                    title="Delete Item"
+                                                    mix-put="/items/delete/{{item['item_pk']}}" 
+                                                    mix-data="#delete-form-{{item['item_pk']}}"
+                                                >
+                                                    Delete item
+                                                </button>
+                                            </form>
                                         {% else %}
                                             {% set item_deleted_at = time.localtime(item['item_deleted_at'])|strftime('%A, %d %B %Y') %}
                                             <div class="d-flex a-items-center text-100 text-c-red:-14">Deleted: {{ item_deleted_at }}</div>
