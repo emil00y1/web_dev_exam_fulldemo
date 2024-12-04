@@ -434,7 +434,7 @@ def view_order_confirmation():
 
 
 ##############################
-@app.get("/users/delete/<user_pk>")
+@app.put("/users/delete/<user_pk>")
 def user_delete(user_pk):
     try:
         if not "admin" in session.get("user", {}).get("roles", []): 
@@ -507,7 +507,7 @@ def user_delete(user_pk):
             </template>
             """, 500
 ##############################
-@app.get("/items/delete/<item_pk>")
+@app.put("/items/delete/<item_pk>")
 def item_delete(item_pk):
     try:
         if not "admin" in session.get("user", {}).get("roles", []): 
@@ -1498,7 +1498,7 @@ def user_update(user_pk):
 
 
 ##############################
-@app.get("/users/block/<user_pk>")
+@app.put("/users/block/<user_pk>")
 def user_block(user_pk):
     try:
         if not "admin" in session.get("user", {}).get("roles", []): 
@@ -1581,7 +1581,7 @@ def user_block(user_pk):
         if "db" in locals(): db.close()
 
 ##############################
-@app.get("/users/unblock/<user_pk>")
+@app.put("/users/unblock/<user_pk>")
 def user_unblock(user_pk):
     try:
         if not "admin" in session.get("user", {}).get("roles", []): 
@@ -1661,7 +1661,7 @@ def user_unblock(user_pk):
 
 
 ##############################
-@app.get("/items/block/<item_pk>")
+@app.put("/items/block/<item_pk>")
 def item_block(item_pk):
     try:
         if not "admin" in session.get("user", {}).get("roles", []): 
@@ -1752,7 +1752,7 @@ def item_block(item_pk):
         if "db" in locals(): db.close()
 
 ##############################
-@app.get("/items/unblock/<item_pk>")
+@app.put("/items/unblock/<item_pk>")
 def item_unblock(item_pk):
     try:
         if not "admin" in session.get("user", {}).get("roles", []): 

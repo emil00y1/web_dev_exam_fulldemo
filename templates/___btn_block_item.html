@@ -1,7 +1,12 @@
-<button
-class="bg-c-red:-10 text-c-body px-3 rounded-sm cursor-pointer mt-2" sm="mt-0"
-hover="bg-c-red:-16"
-id="block-{{ item['item_pk'] }}"
-mix-get="/items/block/{{ item['item_pk'] }}">
-Block
-</button>
+<form id="block-form-{{item['item_pk']}}" class="m-0">
+   <input type="hidden" name="item_pk" value="{{item['item_pk']}}">
+   <button
+       class="bg-c-red:-10 text-c-body px-3 rounded-sm cursor-pointer mt-2" 
+       sm="mt-0"
+       hover="bg-c-red:-16"
+       id="block-{{item['item_pk']}}"
+       mix-put="/items/block/{{item['item_pk']}}"
+       mix-data="#block-form-{{item['item_pk']}}">
+       Block
+   </button>
+</form>
