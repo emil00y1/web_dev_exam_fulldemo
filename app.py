@@ -2231,11 +2231,12 @@ def add_item_image(item_pk):
         if "restaurant" not in user.get("roles", []):
             return "Access restricted to restaurant users only.", 403
 
+        # Validate the item_pk (ensure it's a valid UUID)
         item_pk = x.validate_uuid4(item_pk)
         restaurant_fk = user["user_pk"]
-        
 
-        UPLOAD_FOLDER = os.path.join('static', 'dishes')  # Changed to 'dishes'
+        # Image upload folder
+        UPLOAD_FOLDER = os.path.join('static', 'dishes')
         if not os.path.exists(UPLOAD_FOLDER):
             os.makedirs(UPLOAD_FOLDER)
 
@@ -2259,10 +2260,10 @@ def add_item_image(item_pk):
         with open(filepath, 'wb') as f:
             f.write(optimized_image.getvalue())
 
-        # Save the image reference in the database
+        # Save the image reference in the database with the correct item_fk (item_pk)
         db, cursor = x.db()
-        query = "INSERT INTO items_image (item_fk, image) VALUES (%s, %s)"
-        cursor.execute(query, (item_pk, filename))
+        query = """INSERT INTO items_image (item_fk, image) VALUES (%s, %s)"""
+        cursor.execute(query, (item_pk, filename))  # Save image associated with the specific item
         db.commit()
 
         print(f"Image successfully added for item {item_pk}.")
@@ -2281,6 +2282,7 @@ def add_item_image(item_pk):
             cursor.close()
         if "db" in locals():
             db.close()
+
 
 #####
 
