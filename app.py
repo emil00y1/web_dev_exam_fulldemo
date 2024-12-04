@@ -1870,6 +1870,23 @@ def view_restaurant(restaurant_fk):
         cursor.execute(query_items, (restaurant_fk,))
         items = cursor.fetchall()
 
+        # Fetch images for the items
+        item_images = {}
+        if items:
+            item_pks = [item['item_pk'] for item in items]
+            format_strings = ','.join(['%s'] * len(item_pks))
+            query_images = f"""SELECT item_fk, image 
+                               FROM items_image 
+                               WHERE item_fk IN ({format_strings})"""
+            cursor.execute(query_images, tuple(item_pks))
+            images = cursor.fetchall()
+
+            # Group images by item_fk
+            for img in images:
+                if img['item_fk'] not in item_images:
+                    item_images[img['item_fk']] = []
+                item_images[img['item_fk']].append(img['image'])
+
         user = session.get("user")
         basket = session.get("basket", [])
         total_price, _ = calculate_basket_totals(basket)
@@ -1882,20 +1899,28 @@ def view_restaurant(restaurant_fk):
         coords = cursor.fetchone()  # Assuming one coordinate per restaurant
 
         # Render template with the fetched data
-        return render_template("view_restaurant.html", 
-                               restaurant=restaurant, 
-                               items=items, 
-                               coords=coords,
-                               user=user,
-                               basket=basket, total_price=total_price)
+        return render_template(
+            "view_restaurant.html",
+            restaurant=restaurant,
+            items=items,
+            coords=coords,
+            item_images=item_images,
+            user=user,
+            basket=basket,
+            total_price=total_price
+        )
     except Exception as ex:
         ic(ex)
-        if "db" in locals(): db.rollback()
+        if "db" in locals():
+            db.rollback()
         toast = render_template("___toast.html", message="Error loading restaurant page.")
         return f"""<template mix-target="#toast">{toast}</template>""", 500
     finally:
-        if "cursor" in locals(): cursor.close()
-        if "db" in locals(): db.close()
+        if "cursor" in locals():
+            cursor.close()
+        if "db" in locals():
+            db.close()
+
 
 #######################################################
 
