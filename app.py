@@ -2012,6 +2012,23 @@ def restaurant_dashboard():
         cursor.execute(query_items, (restaurant_fk,))
         items = cursor.fetchall()
 
+        # Fetch images for the items
+        item_images = {}
+        if items:
+            item_pks = [item['item_pk'] for item in items]
+            format_strings = ','.join(['%s'] * len(item_pks))
+            query_images = f"""SELECT item_fk, image 
+                               FROM items_image 
+                               WHERE item_fk IN ({format_strings})"""
+            cursor.execute(query_images, tuple(item_pks))
+            images = cursor.fetchall()
+
+            # Populate the item_images dictionary
+            for img in images:
+                if img['item_fk'] not in item_images:
+                    item_images[img['item_fk']] = []
+                item_images[img['item_fk']].append(img['image'])
+
         # Fetch coordinates associated with the restaurant
         query_coords = """SELECT coordinates 
                           FROM coords 
@@ -2024,6 +2041,7 @@ def restaurant_dashboard():
             "restaurant_dashboard.html",
             restaurant=restaurant,
             items=items,
+            item_images=item_images,  # Now populated with item images
             coords=coords,
             user=user,
             time=time,
@@ -2039,6 +2057,7 @@ def restaurant_dashboard():
             cursor.close()
         if "db" in locals():
             db.close()
+
 
 
 @app.post("/restaurant/add_item")
@@ -2193,6 +2212,71 @@ def edit_item(item_pk):
         if "db" in locals():
             db.rollback()
         return f"Error editing item: {ex}", 500
+    finally:
+        if "cursor" in locals():
+            cursor.close()
+        if "db" in locals():
+            db.close()
+
+
+############# ADD IMAGE ITEMS ################
+@app.post("/items/<item_pk>/add_image")
+def add_item_image(item_pk):
+    try:
+        # Ensure the user is logged in
+        user = session.get("user")
+        if not user:
+            return "Please log in to add images.", 401
+
+        # Ensure the user has the role "restaurant"
+        if "restaurant" not in user.get("roles", []):
+            return "Access restricted to restaurant users only.", 403
+
+        item_pk = x.validate_uuid4(item_pk)
+        restaurant_fk = user["user_pk"]
+        
+
+        UPLOAD_FOLDER = os.path.join('static', 'dishes')  # Changed to 'dishes'
+        if not os.path.exists(UPLOAD_FOLDER):
+            os.makedirs(UPLOAD_FOLDER)
+
+        # Check if file is in the request
+        if 'item_image' not in request.files:
+            return "No image file provided.", 400
+
+        file = request.files['item_image']
+        if not file or not file.filename:
+            return "No selected file.", 400
+
+        # Validate file type
+        if not file.filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp')):
+            return "Invalid file type. Please upload an image.", 400
+
+        # Optimize and save the image
+        optimized_image = optimize_image(file)
+        filename = f"item_{item_pk}_{int(time.time())}.webp"  # Generate unique filename
+        filepath = os.path.join(UPLOAD_FOLDER, filename)
+
+        with open(filepath, 'wb') as f:
+            f.write(optimized_image.getvalue())
+
+        # Save the image reference in the database
+        db, cursor = x.db()
+        query = "INSERT INTO items_image (item_fk, image) VALUES (%s, %s)"
+        cursor.execute(query, (item_pk, filename))
+        db.commit()
+
+        print(f"Image successfully added for item {item_pk}.")
+
+        # Redirect back to the item management page
+        return redirect("/restaurant")
+
+    except Exception as ex:
+        print(f"Error adding item image: {ex}")
+        if "db" in locals():
+            db.rollback()
+        return f"Error adding item image: {ex}", 500
+
     finally:
         if "cursor" in locals():
             cursor.close()

@@ -41,6 +41,23 @@
                 Last updated: {{ item_updated_at }}
             </div>
     {% endif %}
+    <div class="image-gallery d-flex gap-2 mb-4">
+        {% for item in items %}
+            {% if item['item_pk'] in item_images %}
+                {% for img in item_images[item['item_pk']] %}
+                    <img
+                        src="{{ url_for('static', filename='dishes/' + img) }}"
+                        alt="Item Image"
+                        class="gallery-image w-32 h-32 object-cover rounded-md shadow-sm"
+                    />
+                {% endfor %}
+            {% endif %}
+        {% endfor %}
+    </div>
+    <form method="POST" action="{{ url_for('add_item_image', item_pk=item['item_pk']) }}" enctype="multipart/form-data" class="mb-5">
+    <input type="file" name="item_image" id="item_image" accept="image/*" required>
+    <button type="submit">Upload</button>
+</form>
             <!-- Action Buttons -->
             <div class="absolute top-4 right-4 d-flex gap-2">
                 <!-- Edit Item Button -->
