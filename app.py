@@ -181,6 +181,101 @@ def view_index():
         if "db" in locals(): db.close()
 
 
+
+##############################
+@app.get("/search")
+def search_results():
+    try:
+        query = request.args.get("q", "").strip()
+        if not query:
+            return redirect(url_for("view_index"))
+            
+        search_term = f"%{query}%"
+        db, cursor = x.db()
+        
+        # Restaurant search remains the same
+        # Restaurant search with coords
+        restaurant_query = """
+            SELECT DISTINCT
+                u.user_pk,
+                u.user_name,
+                u.user_avatar,
+                c.coordinates
+            FROM 
+                users u
+            JOIN 
+                users_roles ur ON u.user_pk = ur.user_role_user_fk
+            JOIN 
+                roles r ON ur.user_role_role_fk = r.role_pk
+            LEFT JOIN
+                coords c ON u.user_pk = c.restaurant_fk
+            WHERE 
+                r.role_name = 'restaurant'
+                AND u.user_deleted_at = 0
+                AND u.user_name LIKE %s
+        """
+        cursor.execute(restaurant_query, (search_term,))
+        restaurants = cursor.fetchall()
+        
+        # Modified items query
+        items_query = """
+            SELECT 
+                i.item_pk,
+                i.item_title,
+                i.item_price,
+                i.restaurant_fk,
+                u.user_name as restaurant_name
+            FROM 
+                items i
+            JOIN 
+                users u ON i.restaurant_fk = u.user_pk
+            WHERE 
+                i.item_deleted_at = 0 
+                AND i.item_blocked_at = 0
+                AND i.item_title LIKE %s
+        """
+        cursor.execute(items_query, (search_term,))
+        items = cursor.fetchall()
+
+        # Fetch images for the items
+        item_images = {}
+        if items:
+            item_pks = [item['item_pk'] for item in items]
+            format_strings = ','.join(['%s'] * len(item_pks))
+            query_images = f"""SELECT item_fk, image 
+                           FROM items_image 
+                           WHERE item_fk IN ({format_strings})"""
+            cursor.execute(query_images, tuple(item_pks))
+            images = cursor.fetchall()
+
+            # Take only the first image for each item
+            for img in images:
+                if img['item_fk'] not in item_images:
+                    item_images[img['item_fk']] = img['image']
+        
+        return render_template(
+            "search_results.html",
+            query=query,
+            restaurants=restaurants,
+            items=items,
+            item_images=item_images,
+            user=session.get("user"),
+            basket=session.get("basket", []),
+            total_price=calculate_basket_totals(session.get("basket", []))[0]
+        )
+        
+    except Exception as ex:
+        ic(ex)
+        if "db" in locals(): db.rollback()
+        if isinstance(ex, x.CustomException):
+            toast = render_template("___toast.html", message=ex.message)
+            return f"""<template mix-target="#toast">{toast}</template>""", ex.code
+        return "<template>System under maintenance</template>", 500
+    finally:
+        if "cursor" in locals(): cursor.close()
+        if "db" in locals(): db.close()
+
+
 ##############################
 @app.get("/signup")
 @x.no_cache
@@ -378,16 +473,17 @@ def show_profile():
     if not user:
         return redirect(url_for("view_login"))
     avatars = get_user_avatars(session['user']['user_pk'])
-    return render_template("view_profile.html",x=x, user=user, avatars=avatars, time=time)
+    
+    basket = session.get("basket", [])
+    total_price, _ = calculate_basket_totals(basket)
+
+    return render_template("view_profile.html",x=x, user=user, avatars=avatars, time=time, total_price=total_price, basket=basket)
 
 ##############################
 
 @app.get("/checkout")
 def view_checkout():
     try:
-        # Debug prints to see what we're working with
-        ic("User session:", session.get("user"))
-        ic("Basket contents:", session.get("basket"))
         
         if not session.get("user"):
             return redirect(url_for("view_login"))

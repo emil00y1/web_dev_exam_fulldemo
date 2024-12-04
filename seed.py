@@ -145,7 +145,8 @@ try:
         )
         """        
     cursor.execute(q)
- 
+    cursor.execute("ALTER TABLE users ADD FULLTEXT INDEX idx_user_name (user_name)")
+
  
     ##############################
     cursor.execute("DROP TABLE IF EXISTS roles")
@@ -188,6 +189,8 @@ try:
     );
     """
     cursor.execute(q)
+    cursor.execute("ALTER TABLE items ADD FULLTEXT INDEX idx_item_title (item_title)")
+
 
     cursor.execute("DROP TABLE IF EXISTS items_image")
     q = """

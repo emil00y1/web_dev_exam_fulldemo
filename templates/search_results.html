@@ -1,0 +1,59 @@
+{% include "_top.html" %}
+
+<main class="mx-4 mb-16" md="mx-6" lg="mx-8">
+    <section class="mx-auto" sm="mt-8">
+        <h1 class="text-xl mb-6">Search Results for "{{ query }}"</h1>
+        
+        {% if not restaurants and not items %}
+            <p class="text-c-gray:-12 text-center py-8">No results found for your search.</p>
+        {% endif %}
+        
+        {% if restaurants %}
+            <div class="mb-8">
+                <h2 class="text-lg mb-4">Restaurants</h2>
+                <div class="d-grid cols-1 gap-4" sm="cols-2" lg="cols-3">
+                    {% for restaurant in restaurants %}
+                        <a href="{{ url_for('view_restaurant', restaurant_fk=restaurant.user_pk) }}" 
+                           class="rounded-sm shadow-md d-flex gap-4" 
+                           parent>
+                                <img src="{{ url_for('static', filename='avatars/' + restaurant.user_avatar) if restaurant.user_avatar else url_for('static', filename='avatars/default_avatar.webp') }}"
+                                     alt="{{ restaurant.user_name }}"
+                                     class="max-w-20 obj-f-cover rounded-l-sm">
+                                <div class="py-4">
+                                    <h3 class="text-lg">{{ restaurant.user_name }}</h3>
+                                    {% if restaurant.coordinates %}
+                                        <p class="text-c-gray:-12">{{ restaurant.coordinates }}</p>
+                                    {% endif %}
+                                </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+        
+     {% if items %}
+        <div>
+            <h2 class="text-xl mb-4">Menu Items</h2>
+            <div class="d-grid cols-1 gap-6" sm="cols-2 gap-8" lg="cols-3">
+                {% for item in items %}
+                    <a href="{{ url_for('view_restaurant', restaurant_fk=item.restaurant_fk) }}" 
+                    class="rounded-sm shadow-md" parent>
+                        {% if item_images.get(item.item_pk) %}
+                            <img src="{{ url_for('static', filename='dishes/' + item_images[item.item_pk]) }}"
+                                alt="{{ item.item_title }}"
+                                class="w-full h-32 obj-f-cover rounded-sm"/>
+                        {% endif %}
+                        <div class="pa-4 pt-3">
+                            <h3 class="text-lg text-c-black:+16 ts-125 text-120" parent-hover="text-c-tealblue:-6">{{ item.item_title }}</h3>
+                            <p class="text-c-tealblue:-6 text-w-semibold">${{ "%.2f"|format(item.item_price) }}</p>
+                            <p class="text-sm mt-2 text-c-gray:-12 ts-125" parent-hover="text-c-tealblue:-6">at {{ item.restaurant_name }}</p>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+    </section>
+</main>
+
+{% include "_bottom.html" %}

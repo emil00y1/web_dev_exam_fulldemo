@@ -1,6 +1,6 @@
 {% include "_top.html" %} 
 
-<main class="mx-4" md="mx-6" lg="mx-8">
+<main class="mx-4 mb-16" md="mx-6" lg="mx-8">
   <div class="d-flex a-items-center mb-6">
     <img
       src="{{ url_for('static', filename='avatars/' + restaurant['user_avatar']) if restaurant['user_avatar'] else url_for('static', filename='avatars/profile_1.jpg') }}"
