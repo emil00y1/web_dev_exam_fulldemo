@@ -2,11 +2,18 @@ from dotenv import load_dotenv
 import os
 from datetime import timedelta
 
-# Load environment variables from .env file
-load_dotenv()
+# Get the absolute path to the .env file
+basedir = os.path.abspath(os.path.dirname(__file__))
+env_path = os.path.join(basedir, '.env')
 
-# Environment setting
-ENVIRONMENT = os.getenv('FLASK_ENV', 'development')
+# Load environment variables from .env file
+load_dotenv(env_path)
+
+# Environment setting with explicit check
+ENVIRONMENT = os.getenv('FLASK_ENV')
+if ENVIRONMENT != 'production':
+    print("Warning: Defaulting to development environment!")
+    ENVIRONMENT = 'development'
 
 class BaseConfig:
     SECRET_KEY = os.getenv('FLASK_SECRET_KEY', 'development-key')
@@ -18,12 +25,14 @@ class BaseConfig:
     EMAIL_SENDER = os.getenv('EMAIL_SENDER')
     EMAIL_PASSWORD = os.getenv('EMAIL_PASSWORD')
     
-    # Role IDs remain the same...
+    # Domain configuration
+    @property
+    def DOMAIN(self):
+        raise NotImplementedError
 
 class DevelopmentConfig(BaseConfig):
-    # Use Docker environment variables
     DB_CONFIG = {
-        'host': os.getenv('DB_HOST', 'mysql'),  # From docker-compose environment
+        'host': os.getenv('DB_HOST', 'mysql'),
         'user': os.getenv('DB_USER', 'root'),
         'password': os.getenv('DB_PASSWORD', 'password'),
         'database': os.getenv('DB_NAME', 'company')
@@ -32,9 +41,9 @@ class DevelopmentConfig(BaseConfig):
     UPLOAD_FOLDER = './images'
     AVATAR_FOLDER = './static/avatars'
     DEBUG = True
+    DOMAIN = 'http://127.0.0.1'
 
 class ProductionConfig(BaseConfig):
-    # Use production environment variables
     DB_CONFIG = {
         'host': os.getenv('PROD_DB_HOST'),
         'user': os.getenv('PROD_DB_USER'),
@@ -48,6 +57,7 @@ class ProductionConfig(BaseConfig):
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Strict'
+    DOMAIN = 'https://emil00y1.pythonanywhere.com'
 
 def get_config():
     return ProductionConfig if ENVIRONMENT == 'production' else DevelopmentConfig

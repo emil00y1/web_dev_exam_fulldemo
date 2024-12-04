@@ -1,3 +1,4 @@
+from config import config  # Import your configuration
 import x
 import uuid
 import time
@@ -9,7 +10,9 @@ fake = Faker()
  
 from icecream import ic
 ic.configureOutput(prefix=f'***** | ', includeContext=True)
- 
+
+def db():
+    return mysql.connector.connect(**config.DB_CONFIG)
  
 db, cursor = x.db()
  

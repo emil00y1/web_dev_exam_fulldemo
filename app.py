@@ -4,7 +4,7 @@ from werkzeug.security import generate_password_hash
 from werkzeug.security import check_password_hash
 from PIL import Image
 import x
-import uuid 
+import uuid
 import time
 import redis
 import os, io
@@ -701,7 +701,7 @@ def signup():
                 VALUES (%s, %s)
             """, (user_pk, user_role_pk))
 
-        email_body = f"""To verify your account, please <a href="http://127.0.0.1/verify/{user_verification_key}">click here</a>"""
+        email_body = f"""To verify your account, please <a href="{config.DOMAIN}/verify/{user_verification_key}">click here</a>"""
         x.send_email(user_email, "Please verify your account", email_body)
         db.commit()
 
@@ -802,7 +802,7 @@ def passwordrecovery():
 
         email_body = f"""<h1>New password requested</h1>
               <p>Hi {user_data['user_name']}, you have requested a new password. Please click on the link below to create a new password.</p>
-              <a href="127.0.0.1/createpassword?id={user_data['user_pk']}">Create new password</a>
+              <a href="{config.DOMAIN}/createpassword?id={user_data['user_pk']}">Create new password</a>
               <p>The Wolt Demo Team</p>
               """
         x.send_email(user_data["user_email"], "New password requested", email_body)
