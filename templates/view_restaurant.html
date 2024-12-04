@@ -18,93 +18,120 @@
   <!-- Restaurant Items -->
   <h2 class="text-xl mb-4 text-c-tealblue:-10 text-w-semibold">Menu</h2>
   {% if items %}
-  <div class="d-flex flex-col gap-6" sm="d-grid cols-2" md="cols-3">
+  <div class="d-flex flex-col gap-6" sm="d-grid cols-2" lg="cols-3">
     {% for item in items %}
-    <article
-      class="rounded-md pa-4 shadow-md"
-    >
-      <div>
-        <div class="image-gallery d-flex gap-2 mb-4">
-          {% for img in item_images[item['item_pk']] %}
-          <img
-            src="{{ url_for('static', filename='dishes/' + img) }}"
-            alt="Item Image"
-            class="gallery-image w-32 h-32 object-cover rounded-md shadow-sm"
-          />
-          {% endfor %}
-        </div>
-        <h3 class="text-c-black:+23 text-xl text-w-semibold">{{ item['item_title'] }}</h3>
-        <p class="text-c-gray">Price: ${{ item['item_price'] }}</p>
-
-        <!-- Order form with quantity selector -->
-        <form id="frm_add_to_order_{{ item['item_pk'] }}" class="mt-4 w-full d-flex j-content-end">
-          <div class="d-flex a-items-center gap-2">
-            <div
-              class="d-flex a-items-center bg-c-tealblue:+46 rounded-sm pa-1"
-            >
-              <!-- Minus button -->
-              <button
-                type="button"
-                class="menu-quantity-decrease rounded-full cursor-pointer bg-c-transparent text-c-tealblue:-6 text-140 d-flex a-items-center h-min-content pa-3 cursor-not-allowed"
-                data-item-id="{{ item['item_pk'] }}"
-                parent
-              >
-                <svg
-                  class="fill-c-tealblue:-6"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 -960 960 960"
-                  width="20px"
-                  height="20px"
-                  parent-hover="fill-c-tealblue:+10"
-                >
-                  <path d="M200-440v-80h560v80H200Z" />
+      <article class="rounded-md shadow-md">
+        <div class="p-relative">
+          {% if item_images[item['item_pk']]|length > 0 %}
+            <div class="image-carousel p-relative h-48 d-flex flex-col" data-item-id="{{ item['item_pk'] }}">
+              <div class="carousel-container overflow-hidden w-full h-full">
+                <div class="carousel-track d-flex h-full translate-x-0" data-current="0">
+                  {% for img in item_images[item['item_pk']] %}
+                  <img src="{{ url_for('static', filename='dishes/' + img) }}"
+                      alt="Item Image"
+                      class="w-full h-full rounded-t-md obj-f-cover flex-shrink-0" />
+                  {% endfor %}
+                </div>
+              </div>
+              {% if item_images[item['item_pk']]|length > 1 %}
+              <button class="carousel-prev p-absolute left-2 top-24 transform translate-y-(-50%) bg-c-white rounded-full w-8 h-8 d-flex a-items-center j-content-center shadow-md z-10 ts-125 opacity-75"
+                      >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="stroke-c-gray:-14 min-w-(20px)">
+                  <path d="M15 18l-6-6 6-6" />
                 </svg>
               </button>
-
-              <!-- Quantity input - now readonly -->
-              <input
-                type="text"
-                name="quantity"
-                id="quantity_{{ item['item_pk'] }}"
-                value="1"
-                readonly
-                class="menu-quantity-input text-a-center border-0 bg-c-transparent max-w-14 text-c-tealblue:-6 text-w-semibold text-105"
-                data-item-id="{{ item['item_pk'] }}"
-              />
-
-              <!-- Plus button -->
-              <button
-                type="button"
-                class="menu-quantity-increase rounded-full cursor-pointer bg-c-transparent text-c-tealblue:-6 text-140 d-flex a-items-center h-min-content pa-3"
-                data-item-id="{{ item['item_pk'] }}"
-                parent
-              >
-                <svg
-                  class="fill-c-tealblue:-6"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 -960 960 960"
-                  height="20px"
-                  width="20px"
-                  parent-hover="fill-c-tealblue:+10"
-                >
-                  <path
-                    d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"
-                  />
+              <button class="carousel-next p-absolute right-2 top-24 transform translate-y-(-50%) bg-c-white rounded-full w-8 h-8 d-flex a-items-center j-content-center shadow-md z-10 ts-125 opacity-75"
+                      >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2" class="stroke-c-gray:-14 min-w-(20px)">
+                  <path d="M9 18l6-6-6-6" />
                 </svg>
+              </button>
+              <!-- Pagination dots -->
+              <div class="p-absolute bottom-2 a-self-center d-flex gap-2">
+                {% for img in item_images[item['item_pk']] %}
+                  <div class="pagination-dot w-2 h-2 rounded-full bg-c-white opacity-50 ts-125 shadow-sm"
+                      data-index="{{ loop.index0 }}"></div>
+                {% endfor %}
+              </div>
+              {% endif %}
+            </div>
+          {% endif %}
+        </div>
+        <div class="pa-4 d-flex flex-col" sm="flex-row" md="flex-col">
+          <div>
+            <h3 class="text-c-black:+23 text-xl text-w-semibold">{{ item['item_title'] }}</h3>
+          </div>
+          <!-- Order form with quantity selector -->
+          <form id="frm_add_to_order_{{ item['item_pk'] }}" class="w-full d-flex j-content-end">
+            <div class="d-flex a-items-center gap-2" sm="flex-col" md="flex-row">
+              <div
+                class="d-flex a-items-center bg-c-tealblue:+46 rounded-sm pa-1"
+              >
+                <!-- Minus button -->
+                <button
+                  type="button"
+                  class="menu-quantity-decrease rounded-full cursor-pointer bg-c-transparent text-c-tealblue:-6 text-140 d-flex a-items-center h-min-content pa-3 cursor-not-allowed"
+                  data-item-id="{{ item['item_pk'] }}"
+                  parent
+                >
+                  <svg
+                    class="fill-c-tealblue:-6"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 -960 960 960"
+                    width="20px"
+                    height="20px"
+                    parent-hover="fill-c-tealblue:+10"
+                  >
+                    <path d="M200-440v-80h560v80H200Z" />
+                  </svg>
+                </button>
+  
+                <!-- Quantity input - now readonly -->
+                <input
+                  type="text"
+                  name="quantity"
+                  id="quantity_{{ item['item_pk'] }}"
+                  value="1"
+                  readonly
+                  class="menu-quantity-input text-a-center border-0 bg-c-transparent max-w-14 text-c-tealblue:-6 text-w-semibold text-105"
+                  sm="max-w-12"
+                  md="max-w-14"
+                  data-item-id="{{ item['item_pk'] }}"
+                />
+  
+                <!-- Plus button -->
+                <button
+                  type="button"
+                  class="menu-quantity-increase rounded-full cursor-pointer bg-c-transparent text-c-tealblue:-6 text-140 d-flex a-items-center h-min-content pa-3"
+                  data-item-id="{{ item['item_pk'] }}"
+                  parent
+                >
+                  <svg
+                    class="fill-c-tealblue:-6"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 -960 960 960"
+                    height="20px"
+                    width="20px"
+                    parent-hover="fill-c-tealblue:+10"
+                  >
+                    <path
+                      d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <!-- Add to order button -->
+              <button mix-post="/add-to-basket/{{ item['item_pk'] }}" mix-data="#frm_add_to_order_{{ item['item_pk'] }}"
+                class="text-c-white bg-c-tealblue:-5 py-7 px-4 rounded-sm text-w-semibold d-flex a-items-center flex-col j-content-center"
+                hover="bg-c-tealblue:-8 cursor-pointer"
+                min-390px="flex-row j-content-start"
+                focus="outline-1 outline-c-tealblue:-6 outline-o-0.5" data-base-price="{{ item['item_price'] }}"
+              >
+                Add to order&nbsp;<span id="total_price_{{ item['item_pk'] }}">${{ item['item_price'] }}</span>
               </button>
             </div>
-
-            <!-- Add to order button -->
-            <button mix-post="/add-to-basket/{{ item['item_pk'] }}" mix-data="#frm_add_to_order_{{ item['item_pk'] }}"
-              class="text-c-white bg-c-tealblue:-5 py-7 px-4 rounded-sm text-w-semibold d-flex a-items-center"
-              hover="bg-c-tealblue:-8 cursor-pointer"
-              focus="outline-1 outline-c-tealblue:-6 outline-o-0.5" data-base-price="{{ item['item_price'] }}"
-            >
-              Add to order $<span id="total_price_{{ item['item_pk'] }}">{{ item['item_price'] }}</span>
-            </button>
-          </div>
-        </form>
-      </div>
+          </form>
+        </div>
     </article>
     {% endfor %}
   </div>

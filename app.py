@@ -193,7 +193,6 @@ def search_results():
         search_term = f"%{query}%"
         db, cursor = x.db()
         
-        # Restaurant search remains the same
         # Restaurant search with coords
         restaurant_query = """
             SELECT DISTINCT
@@ -2077,6 +2076,11 @@ def restaurant_dashboard():
     try:
         # Ensure the user is logged in
         user = session.get("user")
+
+        #basket
+        basket = session.get("basket", [])
+        total_price, _ = calculate_basket_totals(basket)
+
         if not user:
             return "Please log in to access your dashboard.", 401
 
@@ -2140,6 +2144,8 @@ def restaurant_dashboard():
             coords=coords,
             user=user,
             time=time,
+            basket=basket,
+            total_price=total_price
         )
 
     except Exception as ex:

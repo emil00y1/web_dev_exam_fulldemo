@@ -24,6 +24,10 @@ document.addEventListener("DOMContentLoaded", () => {
       updateQuantity(itemId, 1);
     }
   });
+
+  if (document.querySelector('.image-carousel')) {
+    initializeCarousels();
+  }
 });
 
 function updateQuantity(itemId, change) {
@@ -72,9 +76,82 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+
+function initializeCarousels() {
+  const carousels = document.querySelectorAll('.image-carousel');
+  
+  carousels.forEach(carousel => {
+    const track = carousel.querySelector('.carousel-track');
+    const prev = carousel.querySelector('.carousel-prev');
+    const next = carousel.querySelector('.carousel-next');
+    const dots = carousel.querySelectorAll('.pagination-dot');
+    
+    if (!track || !prev || !next) return;
+    
+    const images = track.querySelectorAll('img');
+    const totalImages = images.length;
+    if (totalImages <= 1) return;
+    
+    let currentIndex = 0;
+    let isTransitioning = false;
+
+    // Set initial track width and transition
+    track.style.width = `${totalImages * 100}%`;
+    track.style.transition = 'transform 0.25s ease-out';
+    
+    // Set equal widths for all images
+    images.forEach(img => {
+      img.style.width = `${100 / totalImages}%`;
+    });
+
+    function slide(direction) {
+      if (isTransitioning) return;
+      
+      const newIndex = direction === 'next' 
+        ? Math.min(currentIndex + 1, totalImages - 1)
+        : Math.max(currentIndex - 1, 0);
+        
+      if (newIndex === currentIndex) return;
+      
+      isTransitioning = true;
+      
+      // Apply transform directly to element
+      track.style.transform = `translateX(-${newIndex * (100 / totalImages)}%)`;
+      
+      // Update current index and reset transition lock after animation
+      setTimeout(() => {
+        currentIndex = newIndex;
+        isTransitioning = false;
+        
+        // Update navigation visibility
+        prev.style.visibility = currentIndex === 0 ? 'hidden' : 'visible';
+        next.style.visibility = currentIndex === totalImages - 1 ? 'hidden' : 'visible';
+        
+        // Update dots
+        dots.forEach((dot, index) => {
+          dot.style.opacity = index === currentIndex ? '1' : '0.5';
+        });
+      }, 250);
+    }
+    
+    // Event listeners
+    prev.addEventListener('click', () => slide('prev'));
+    next.addEventListener('click', () => slide('next'));
+    
+    // Initialize navigation visibility
+    prev.style.visibility = 'hidden';
+    next.style.visibility = totalImages > 1 ? 'visible' : 'hidden';
+  });
+}
+
 // MOJO CUSTOMIZATION
 mojo({
     base: {
+        breakpoints: {
+          "min-390px": {
+            min: "390px", // The minimum width for this breakpoint
+          },
+        },
         definedValues: {
             animation: {
                 slideIn: {
@@ -96,6 +173,28 @@ mojo({
                         },
                         "100%": {
                             idle: "transform:translateX(100%)",
+                        },
+                    },
+                },
+                carouselNext: {
+                    dur: "0.25s ease-out",
+                    keyframes: {
+                        "0%": {
+                            idle: "transform:translateX(0)",
+                        },
+                        "100%": {
+                            idle: "transform:translateX(-100%)",
+                        },
+                    },
+                },
+                carouselPrev: {
+                    dur: "0.25s ease-out",
+                    keyframes: {
+                        "0%": {
+                            idle: "transform:translateX(-100%)",
+                        },
+                        "100%": {
+                            idle: "transform:translateX(0)",
                         },
                     },
                 }

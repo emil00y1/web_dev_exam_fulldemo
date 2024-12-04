@@ -1,6 +1,6 @@
 {% include "_top.html" %}
 
-<main class="w-95vw max-w-1200 mx-auto p-6">
+<main class="w-95vw max-w-1200 mx-auto mb-16">
     <!-- Restaurant Details -->
     <div class="d-flex a-items-center mb-6">
         <img src="{{ url_for('static', filename='avatars/' + restaurant['user_avatar']) if restaurant['user_avatar'] else url_for('static', filename='avatars/profile_1.jpg') }}" 
