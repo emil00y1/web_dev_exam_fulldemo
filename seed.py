@@ -455,6 +455,7 @@ try:
                 insert_item(item)
 
 
+
 # Seed coords only if the user is a restaurant
         if x.RESTAURANT_ROLE_PK:
                 coords_pk = str(uuid.uuid4())
@@ -467,8 +468,24 @@ try:
                 
  
     db.commit()
- 
- 
+
+                
+    cursor.execute("SELECT item_pk FROM items")
+    items = cursor.fetchall()
+
+    for item in items:  
+        item_pk = item["item_pk"] 
+        for _ in range(3):  # Generate and insert 3 images per item
+            image = {
+            "item_fk": item_pk,
+            "image": "dish_" + str(random.randint(1, 100)) + ".jpg",
+            }
+        insert_item_image(image)  # Insert the image into the database
+
+# Commit all changes after processing all items
+    db.commit()
+
+
 except Exception as ex:
     ic(ex)
     if "db" in locals(): db.rollback()
