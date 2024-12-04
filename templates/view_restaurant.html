@@ -24,6 +24,15 @@
       class="rounded-md pa-4 shadow-md"
     >
       <div>
+        <div class="image-gallery d-flex gap-2 mb-4">
+          {% for img in item_images[item['item_pk']] %}
+          <img
+            src="{{ url_for('static', filename='dishes/' + img) }}"
+            alt="Item Image"
+            class="gallery-image w-32 h-32 object-cover rounded-md shadow-sm"
+          />
+          {% endfor %}
+        </div>
         <h3 class="text-c-black:+23 text-xl text-w-semibold">{{ item['item_title'] }}</h3>
         <p class="text-c-gray">Price: ${{ item['item_price'] }}</p>
 
