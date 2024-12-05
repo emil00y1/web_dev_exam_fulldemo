@@ -47,7 +47,7 @@ function updateQuantity(itemId, change) {
     decreaseBtn.classList.remove("cursor-not-allowed");
   }
   const total = basePrice * value;
-  totalPriceSpan.textContent = total.toFixed(2);
+  totalPriceSpan.textContent = "$"+total.toFixed(2);
 }
 
 
