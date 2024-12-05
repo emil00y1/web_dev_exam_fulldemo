@@ -148,9 +148,15 @@ function initializeCarousels() {
 mojo({
     base: {
         breakpoints: {
-          "min-390px": {
-            min: "390px", // The minimum width for this breakpoint
+          "xs": {
+            min: "375px", // The minimum width for this breakpoint
           },
+          "xxl":{
+            fontSize: "16px",
+          },
+          "xm":{
+            min: "1124px"
+          }
         },
         definedValues: {
             animation: {
