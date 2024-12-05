@@ -8,21 +8,21 @@
                 <label for="user_name">
                     <span>Name</span>
                 </label>
-                <input name="user_name" id="user_name" type="text" mix-check="{{ x.USER_NAME_REGEX }}">
+                <input name="user_name" id="user_name" type="text" mix-check="{{ x.USER_NAME_REGEX }}" focus="outline-1 outline-c-tealblue:-6">
             </div>
     
             <div class="d-flex flex-col">
                 <label for="user_last_name">
                     <span>Last name</span>
                 </label>
-                <input name="user_last_name" id="user_last_name" type="text" mix-check="{{ x.USER_LAST_NAME_REGEX }}">
+                <input name="user_last_name" id="user_last_name" type="text" mix-check="{{ x.USER_LAST_NAME_REGEX }}" focus="outline-1 outline-c-tealblue:-6">
             </div>        
     
             <div class="d-flex flex-col">
                 <label for="user_role">
                     <span>Role</span>
                 </label>
-                <select name="role" id="user_role" class="p-2 br-4 bg-c-white shadow-sm pa-4 text-100 text-t-capitalize">
+                <select name="role" id="user_role" class=" br-4 bg-c-white h-12 px-2 text-100 text-t-capitalize rounded-sm border-1 border-c-gray:+25" focus="outline-1 outline-c-tealblue:-6">
                     {% for role in roles %}
                         <option value="{{ role.role_pk }}">{{ role.role_name }}</option>
                     {% endfor %}
@@ -36,22 +36,22 @@
                     
                     <div class="d-flex flex-col">
                         <label for="street">Street</label>
-                        <input name="street" id="street" type="text" class="bg-c-white">
+                        <input name="street" id="street" type="text" class="bg-c-white" focus="outline-1 outline-c-tealblue:-6">
                     </div>
 
                     <div class="d-flex flex-col">
                         <label for="house_number">House Number</label>
-                        <input name="house_number" id="house_number" type="text" class="bg-c-white">
+                        <input name="house_number" id="house_number" type="text" class="bg-c-white" focus="outline-1 outline-c-tealblue:-6">
                     </div>
 
                     <div class="d-flex flex-col">
                         <label for="postcode">Postal Code</label>
-                        <input name="postcode" id="postcode" type="text" class="bg-c-white">
+                        <input name="postcode" id="postcode" type="text" class="bg-c-white" focus="outline-1 outline-c-tealblue:-6">
                     </div>
 
                     <div class="d-flex flex-col">
                         <label for="city">City</label>
-                        <input name="city" id="city" type="text" class="bg-c-white">
+                        <input name="city" id="city" type="text" class="bg-c-white" focus="outline-1 outline-c-tealblue:-6">
                     </div>
                 </div>
             </div>
@@ -60,7 +60,7 @@
                 <label for="user_email">
                     <span>E-mail</span>
                 </label>
-                <input name="user_email" id="user_email" type="text" mix-check="{{ x.REGEX_EMAIL }}">
+                <input name="user_email" id="user_email" type="text" mix-check="{{ x.REGEX_EMAIL }}" focus="outline-1 outline-c-tealblue:-6">
             </div>
     
             <div class="d-flex flex-col">
@@ -68,7 +68,7 @@
                     <span>Password</span>
                     <span class="ml-auto text-c-gray:+25">{{ x.USER_PASSWORD_MIN }} to {{ x.USER_PASSWORD_MAX }} chars</span>
                 </label>
-                <input name="user_password" id="user_password" type="text" mix-check="{{ x.REGEX_USER_PASSWORD }}">
+                <input name="user_password" id="user_password" type="text" mix-check="{{ x.REGEX_USER_PASSWORD }}" focus="outline-1 outline-c-tealblue:-6">
             </div>        
     
             <button mix-post="/users" mix-data="#frm_user_signup" class="text-c-white bg-c-tealblue:-5 cursor-pointer py-3 px-5 rounded-sm" hover="bg-c-tealblue:-8">

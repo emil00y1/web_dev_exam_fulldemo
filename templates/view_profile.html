@@ -70,67 +70,77 @@
     </div>
         <h2 class="mt-4 text-w-semibold" md="text-110 mt-6">Your information</h2>
         <form id="frm_user_update" class="d-flex flex-col gap-4" sm="w-min-content" enctype="multipart/form-data">
-                <div class="d-flex flex-col">
-                    <label for="user_avatar">Upload Profile Avatar</label>
-                    <input
-                        type="file"
-                        id="user_avatar"
-                        name="user_avatar"
-                        accept="image/*"
-                        focus="outline-1 outline-c-tealblue:-6 outline-o-0.5"
-                        class="cursor-pointer h-min-content py-4"
-                    />
-                    <span class="text-sm text-gray-600">Recommended: Square image, max 800x800px</span>
-                </div>
-        
-                <div class="d-flex flex-col">
-                    <label for="user_name">First Name</label>
-                    <input
-                        name="user_name"
-                        id="user_name"
-                        type="text"
-                        mix-check="{{ x.USER_NAME_REGEX }}"
-                        value="{{ user['user_name'] }}"
-                        focus="outline-1 outline-c-tealblue:-6 outline-o-0.5"
-
-                    />
-                </div>
-        
-                <div class="d-flex flex-col">
-                    <label for="user_last_name">Last Name</label>
-                    <input
-                        name="user_last_name"
-                        id="user_last_name"
-                        type="text"
-                        mix-check="{{ x.USER_LAST_NAME_REGEX }}"
-                        value="{{ user['user_last_name'] }}"
-                        focus="outline-1 outline-c-tealblue:-6 outline-o-0.5"
-
-                    />
-                </div>
-        
-                <div class="d-flex flex-col">
-                    <label for="user_email">Email</label>
-                    <input
-                        name="user_email"
-                        id="user_email"
-                        type="text"
-                        mix-check="{{ x.REGEX_EMAIL }}"
-                        value="{{ user['user_email'] }}"
-                        focus="outline-1 outline-c-tealblue:-6 outline-o-0.5"
-                    />
-                </div>
-        
-                <button 
-                    mix-put="/users/{{ user['user_pk'] }}" 
-                    mix-data="#frm_user_update"
-                    class="text-c-white bg-c-tealblue:-5 cursor-pointer"
-                    hover="bg-c-tealblue:-8"
+            <div class="d-flex flex-col">
+                <label for="user_avatar">Upload Profile Avatar</label>
+                <input type="file" id="user_avatar" name="user_avatar" accept="image/*"
                     focus="outline-1 outline-c-tealblue:-6 outline-o-0.5"
+                    class="cursor-pointer h-min-content py-4" />
+                <span class="text-sm text-gray-600">Recommended: Square image, max 800x800px</span>
+            </div>
 
-                >
-                    Update profile
-                </button>
+            <div class="d-flex flex-col">
+                <label for="user_name">First Name</label>
+                <input name="user_name" id="user_name" type="text"
+                    mix-check="{{ x.USER_NAME_REGEX }}" value="{{ user['user_name'] }}"
+                    focus="outline-1 outline-c-tealblue:-6 outline-o-0.5" />
+            </div>
+
+            <div class="d-flex flex-col">
+                <label for="user_last_name">Last Name</label>
+                <input name="user_last_name" id="user_last_name" type="text"
+                    mix-check="{{ x.USER_LAST_NAME_REGEX }}" value="{{ user['user_last_name'] }}"
+                    focus="outline-1 outline-c-tealblue:-6 outline-o-0.5" />
+            </div>
+
+            <div class="d-flex flex-col">
+                <label for="user_email">Email</label>
+                <input name="user_email" id="user_email" type="text"
+                    mix-check="{{ x.REGEX_EMAIL }}" value="{{ user['user_email'] }}"
+                    focus="outline-1 outline-c-tealblue:-6 outline-o-0.5" />
+            </div>
+
+            <!-- Restaurant Address Fields - Only show for restaurants -->
+            {% if "restaurant" in user.roles %}
+                <div class="mt-4 bg-c-tealblue:+46 pa-4 rounded-md">
+                    <h3 class="text-c-tealblue:-10 text-w-semibold mb-4">Restaurant Address</h3>
+                    <div class="d-flex flex-col gap-4">
+                        <div class="d-flex flex-col">
+                            <label for="street">Street Name</label>
+                            <input type="text" name="street" id="street" 
+                                value="{{ coords.street if coords else '' }}"
+                                focus="outline-1 outline-c-tealblue:-6 outline-o-0.5" />
+                        </div>
+
+                        <div class="d-flex flex-col">
+                            <label for="house_number">House Number</label>
+                            <input type="text" name="house_number" id="house_number" 
+                                value="{{ coords.house_number if coords else '' }}"
+                                focus="outline-1 outline-c-tealblue:-6 outline-o-0.5" />
+                        </div>
+
+                        <div class="d-flex flex-col">
+                            <label for="postcode">Postal Code</label>
+                            <input type="text" name="postcode" id="postcode" 
+                                value="{{ coords.postcode if coords else '' }}"
+                                focus="outline-1 outline-c-tealblue:-6 outline-o-0.5" />
+                        </div>
+
+                        <div class="d-flex flex-col">
+                            <label for="city">City</label>
+                            <input type="text" name="city" id="city" 
+                                value="{{ coords.city if coords else '' }}"
+                                focus="outline-1 outline-c-tealblue:-6 outline-o-0.5" />
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <button mix-put="/users/{{ user['user_pk'] }}" mix-data="#frm_user_update"
+                class="text-c-white bg-c-tealblue:-5 cursor-pointer"
+                hover="bg-c-tealblue:-8"
+                focus="outline-1 outline-c-tealblue:-6 outline-o-0.5">
+                Update profile
+            </button>
         </form>
         <div class="d-flex flex-col">
             {% if user["roles"][0] == "customer" %}

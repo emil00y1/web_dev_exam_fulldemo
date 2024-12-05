@@ -552,13 +552,35 @@ def show_profile():
     user = session.get("user")
     if not user:
         return redirect(url_for("view_login"))
+        
     avatars = get_user_avatars(session['user']['user_pk'])
-    
     basket = session.get("basket", [])
     total_price, _ = calculate_basket_totals(basket)
+    
+    coords = None
+    if "restaurant" in user["roles"]:
+        db, cursor = x.db()
+        try:
+            cursor.execute("""
+                SELECT street, house_number, postcode, city 
+                FROM coords 
+                WHERE restaurant_fk = %s
+            """, (user["user_pk"],))
+            coords = cursor.fetchone()
+        finally:
+            cursor.close()
+            db.close()
 
-    return render_template("view_profile.html",x=x, user=user, avatars=avatars, time=time, total_price=total_price, basket=basket)
-
+    return render_template(
+        "view_profile.html",
+        x=x,
+        user=user,
+        avatars=avatars,
+        coords=coords,
+        time=time,
+        total_price=total_price,
+        basket=basket
+    )
 ##############################
 
 @app.get("/checkout")
@@ -1627,18 +1649,24 @@ def update_active_avatar(user_pk):
 @app.put("/users/<user_pk>")
 def user_update(user_pk):
     try:
-        if not session.get("user"): x.raise_custom_exception("please login", 401)
+        if not session.get("user"): 
+            x.raise_custom_exception("please login", 401)
+        
         user_pk = x.validate_uuid4(user_pk)
         user_name = x.validate_user_name()
         user_last_name = x.validate_user_last_name()
         user_email = x.validate_user_email()
         user_updated_at = int(time.time())
         
+        # Get the current user's roles
+        current_user = session.get("user")
+        is_restaurant = "restaurant" in current_user.get("roles", [])
+        
+        db, cursor = x.db()
+        cursor.execute("START TRANSACTION")
+        
+        # Handle avatar upload if present
         user_avatar = None
-
-        UPLOAD_FOLDER = os.path.join('static', 'avatars')
-        ic("Request files:", request.files)
-
         if 'user_avatar' in request.files:
             file = request.files['user_avatar']
             if file and file.filename:
@@ -1646,25 +1674,79 @@ def user_update(user_pk):
                     x.raise_custom_exception("Invalid file type. Please upload an image.", 400)
                 
                 optimized_image = optimize_image(file)
-                filename = f"avatar_{user_pk}_{int(time.time())}.webp" # This will be stored in DB
-                filepath = os.path.join(UPLOAD_FOLDER, filename)  # Full path for saving file
+                filename = f"avatar_{user_pk}_{int(time.time())}.webp"
+                filepath = os.path.join(config.AVATAR_FOLDER, filename)
                 
                 with open(filepath, 'wb') as f:
                     f.write(optimized_image.getvalue())
                 
-                user_avatar = filename  # Only store filename in DB
-       
-        db, cursor = x.db()
+                user_avatar = filename
+        
+        # Update user information
         if user_avatar:
-            q = "UPDATE users SET user_name = %s, user_last_name = %s, user_email = %s, user_updated_at = %s, user_avatar = %s WHERE user_pk = %s"
-            cursor.execute(q, (user_name, user_last_name, user_email, user_updated_at, user_avatar, user_pk))
+            q = """UPDATE users 
+                   SET user_name = %s, user_last_name = %s, user_email = %s, 
+                       user_updated_at = %s, user_avatar = %s 
+                   WHERE user_pk = %s"""
+            cursor.execute(q, (user_name, user_last_name, user_email, 
+                             user_updated_at, user_avatar, user_pk))
         else:
-            q = "UPDATE users SET user_name = %s, user_last_name = %s, user_email = %s, user_updated_at = %s WHERE user_pk = %s"
-            cursor.execute(q, (user_name, user_last_name, user_email, user_updated_at, user_pk))
+            q = """UPDATE users 
+                   SET user_name = %s, user_last_name = %s, user_email = %s, 
+                       user_updated_at = %s 
+                   WHERE user_pk = %s"""
+            cursor.execute(q, (user_name, user_last_name, user_email, 
+                             user_updated_at, user_pk))
+        
+        if cursor.rowcount != 1: 
+            x.raise_custom_exception("cannot update user", 401)
+        
+        # Handle restaurant address update if applicable
+        if is_restaurant:
+            street = request.form.get("street")
+            house_number = request.form.get("house_number")
+            postcode = request.form.get("postcode")
+            city = request.form.get("city")
             
-        if cursor.rowcount != 1: x.raise_custom_exception("cannot update user", 401)
+            if all([street, house_number, postcode, city]):
+                # Get coordinates using geocoding
+                full_address = f"{street} {house_number}, {postcode} {city}"
+                geocoder = GeocodingHelper()
+                coords = geocoder.get_coordinates(full_address)
+                
+                if not coords:
+                    raise x.CustomException("Could not validate address", 400)
+                    
+                formatted_coords = geocoder.format_coordinates(*coords)
+                
+                # Check if coordinates exist for this restaurant
+                cursor.execute("""
+                    SELECT coords_pk FROM coords WHERE restaurant_fk = %s
+                """, (user_pk,))
+                existing_coords = cursor.fetchone()
+                
+                if existing_coords:
+                    # Update existing coordinates
+                    cursor.execute("""
+                        UPDATE coords 
+                        SET coordinates = %s, street = %s, house_number = %s, 
+                            postcode = %s, city = %s
+                        WHERE restaurant_fk = %s
+                    """, (formatted_coords, street, house_number, postcode, 
+                         city, user_pk))
+                else:
+                    # Insert new coordinates
+                    coords_pk = str(uuid.uuid4())
+                    cursor.execute("""
+                        INSERT INTO coords (coords_pk, coordinates, restaurant_fk, 
+                                          street, house_number, postcode, city)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    """, (coords_pk, formatted_coords, user_pk, street, 
+                          house_number, postcode, city))
+        
         db.commit()
-
+        
+        # Update session
         session_update = {
             'user_name': user_name,
             'user_last_name': user_last_name,
@@ -1679,14 +1761,13 @@ def user_update(user_pk):
         toast = render_template("___toast.html", message="Profile updated")
         return f"""
             <template mix-target="#toast">{toast}</template>
-             {"<template mix-redirect='/profile'></template>" if user_avatar else ""}    
+            {"<template mix-redirect='/profile'></template>" if user_avatar else ""}    
         """
 
     except Exception as ex:
         ic(ex)
-        print("Type of exception:", type(ex))  # Add this
-        print("Exception details:", str(ex))    # Add this
-        if "db" in locals(): db.rollback()
+        if "db" in locals(): 
+            db.rollback()
         if isinstance(ex, x.CustomException):
             toast = render_template("___toast.html", message=ex.message)
             return f"""<template mix-target="#toast" mix-bottom>{toast}</template>""", ex.code
@@ -1695,15 +1776,11 @@ def user_update(user_pk):
                 toast = render_template("___toast.html", message="email not available")
                 return f"""<template mix-target="#toast" mix-bottom>{toast}</template>""", 400
             return f"<template>Error: {str(ex)}</template>", 500        
-        
-        # Instead of generic "System under maintenance", let's see the error
         return f"<template>Error: {str(ex)}</template>", 500
    
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
-
-
 
 ##############################
 @app.put("/users/block/<user_pk>")
