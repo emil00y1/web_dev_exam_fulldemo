@@ -8,7 +8,7 @@
             <p class="ma-0 text-w-semibold text-c-tealblue:-6 text-t-capitalize text-90">{{user["roles"][0]}}</p>
             <p class="text-90 ma-0">Joined <span>{{time.localtime(user['user_verified_at'])|strftime('%A, %d %B %Y')}}</span></p>
         </div>
-        <div md="order-last w-full pa-16 d-flex flex-col a-items-center">
+        <div md="order-last w-full pa-16 d-flex flex-col a-items-center j-content-center">
             <img src="{{ url_for('static', filename='avatars/' + user['user_avatar']) if user['user_avatar'] else url_for('static', filename='avatars/default_avatar.webp') }}" alt="User Avatar" class="w-full rounded-full shadow-md max-w-90 obj-f-cover aspect-ratio:1 d-none" md="d-block">
             {% if avatars|length > 0 %}
             <div class="mt-6 a-self-start w-full">

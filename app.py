@@ -3,6 +3,10 @@ from flask_session import Session
 from werkzeug.security import generate_password_hash
 from werkzeug.security import check_password_hash
 from PIL import Image
+from geopy.geocoders import Nominatim
+from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
+from functools import wraps
+from typing import Dict, Tuple, Optional, Union
 import x
 import uuid
 import time
@@ -69,6 +73,7 @@ def get_user_avatars(user_pk):
 
 
 
+
 ##############################
 def calculate_basket_totals(basket):
     """
@@ -87,6 +92,75 @@ def calculate_basket_totals(basket):
     return total_price, total_items
 
 
+
+##############################
+def rate_limit_decorator(min_delay: float = 1.0):
+    """
+    Decorator to ensure minimum delay between API calls to respect rate limits.
+    
+    Args:
+        min_delay (float): Minimum delay in seconds between calls
+    """
+    last_call = {}
+    
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            current_time = time.time()
+            if func.__name__ in last_call:
+                elapsed = current_time - last_call[func.__name__]
+                if elapsed < min_delay:
+                    time.sleep(min_delay - elapsed)
+            
+            result = func(*args, **kwargs)
+            last_call[func.__name__] = time.time()
+            return result
+        return wrapper
+    return decorator
+
+class GeocodingHelper:
+    def __init__(self, user_agent: str = "my_food_delivery_app"):
+        """
+        Initialize the geocoding helper with Nominatim geocoder.
+        
+        Args:
+            user_agent (str): User agent string for Nominatim service
+        """
+        self.geolocator = Nominatim(user_agent=user_agent)
+        
+    @rate_limit_decorator(min_delay=1.0)
+    def get_coordinates(self, address: str) -> Optional[Tuple[float, float]]:
+        """
+        Convert an address to coordinates (latitude, longitude).
+        Used during restaurant signup to store location data.
+        
+        Args:
+            address (str): Full address string
+            
+        Returns:
+            Optional[Tuple[float, float]]: Tuple of (latitude, longitude) or None if not found
+        """
+        try:
+            location = self.geolocator.geocode(address)
+            if location:
+                return (location.latitude, location.longitude)
+            return None
+        except (GeocoderTimedOut, GeocoderUnavailable) as e:
+            print(f"Geocoding error: {str(e)}")
+            return None
+
+    def format_coordinates(self, lat: float, lon: float) -> str:
+        """
+        Format coordinates as string in required format.
+        
+        Args:
+            lat (float): Latitude
+            lon (float): Longitude
+            
+        Returns:
+            str: Formatted coordinates string
+        """
+        return f"[{lat}, {lon}]"
 
 
 ##############################
@@ -126,7 +200,9 @@ def view_index():
         offset = (page - 1) * per_page
 
         db, cursor = x.db()
-        q = """SELECT coords.*, users.user_name, users.user_avatar 
+        # Modified query to include address fields
+        q = """SELECT coords.*, users.user_name, users.user_avatar,
+                      coords.street, coords.house_number, coords.postcode, coords.city
                FROM coords 
                JOIN users ON coords.restaurant_fk = users.user_pk
                LIMIT %s OFFSET %s"""
@@ -137,7 +213,6 @@ def view_index():
         cursor.execute("SELECT COUNT(*) AS total FROM coords")
         total = cursor.fetchone()["total"]
 
-        # Determine next and previous page numbers
         next_page = page + 1 if offset + per_page < total else None
         prev_page = page - 1 if page > 1 else None
 
@@ -145,6 +220,7 @@ def view_index():
         basket = session.get("basket", [])
         total_price, _ = calculate_basket_totals(basket)
 
+        # Enhanced coords list with address information
         coords = [
             {
                 "coords_pk": row["coords_pk"],
@@ -152,6 +228,10 @@ def view_index():
                 "restaurant_fk": row["restaurant_fk"],
                 "user_name": row["user_name"],
                 "user_avatar": row["user_avatar"],
+                "street": row["street"],
+                "house_number": row["house_number"],
+                "postcode": row["postcode"],
+                "city": row["city"]
             }
             for row in rows
         ]
@@ -181,7 +261,6 @@ def view_index():
         if "db" in locals(): db.close()
 
 
-
 ##############################
 @app.get("/search")
 def search_results():
@@ -193,13 +272,17 @@ def search_results():
         search_term = f"%{query}%"
         db, cursor = x.db()
         
-        # Restaurant search with coords
+        # Modified restaurant query to include address information
         restaurant_query = """
             SELECT DISTINCT
                 u.user_pk,
                 u.user_name,
                 u.user_avatar,
-                c.coordinates
+                c.coordinates,
+                c.street,
+                c.house_number,
+                c.postcode,
+                c.city
             FROM 
                 users u
             JOIN 
@@ -216,7 +299,7 @@ def search_results():
         cursor.execute(restaurant_query, (search_term,))
         restaurants = cursor.fetchall()
         
-        # Modified items query
+        # Rest of your existing search logic...
         items_query = """
             SELECT 
                 i.item_pk,
@@ -236,7 +319,7 @@ def search_results():
         cursor.execute(items_query, (search_term,))
         items = cursor.fetchall()
 
-        # Fetch images for the items
+        # Fetch images for items...
         item_images = {}
         if items:
             item_pks = [item['item_pk'] for item in items]
@@ -247,7 +330,6 @@ def search_results():
             cursor.execute(query_images, tuple(item_pks))
             images = cursor.fetchall()
 
-            # Take only the first image for each item
             for img in images:
                 if img['item_fk'] not in item_images:
                     item_images[img['item_fk']] = img['image']
@@ -273,7 +355,6 @@ def search_results():
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
-
 
 ##############################
 @app.get("/signup")
@@ -795,7 +876,7 @@ def signup():
         user_verified_at = 0
         user_verification_key = str(uuid.uuid4())
 
-        user_role_pk = request.form.get("role")  # Get selected role_pk from the form
+        user_role_pk = request.form.get("role")
 
         db, cursor = x.db()
 
@@ -811,47 +892,78 @@ def signup():
         if selected_role["role_name"].lower() == "admin":
             raise x.CustomException("Unauthorized role selection", 400)
         
-        # First check if the email exists and if it belongs to a deleted user
+        # Check for existing email
         cursor.execute("SELECT user_deleted_at FROM users WHERE user_email = %s", (user_email,))
         existing_user = cursor.fetchone()
         
-        if existing_user:
-            if existing_user["user_deleted_at"] == 0:
-                # Active user with this email exists
-                toast = render_template("___toast.html", message="Email not available")
+        if existing_user and existing_user["user_deleted_at"] == 0:
+            toast = render_template("___toast.html", message="Email not available")
+            return f"""<template mix-target="#toast" mix-bottom>{toast}</template>""", 400
+
+        # Handle restaurant address if role is restaurant
+        if selected_role["role_name"].lower() == "restaurant":
+            street = request.form.get("street")
+            house_number = request.form.get("house_number")
+            postcode = request.form.get("postcode")
+            city = request.form.get("city")
+            
+            if not all([street, house_number, postcode, city]):
+                toast = render_template("___toast.html", message="All address fields are required for restaurants")
                 return f"""<template mix-target="#toast" mix-bottom>{toast}</template>""", 400
-            else:
-                # Reactivate deleted user
-                cursor.execute("""
-                    UPDATE users 
-                    SET user_deleted_at = 0,
-                        user_verified_at = 0,
-                        user_name = %s,
-                        user_last_name = %s,
-                        user_password = %s,
-                        user_verification_key = %s,
-                        user_updated_at = %s
-                    WHERE user_email = %s
-                """, (user_name, user_last_name, hashed_password, 
-                     user_verification_key, user_created_at, user_email))
-        else:
-            # New user signup
-            q = 'INSERT INTO users VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
-            cursor.execute(q, (user_pk, user_name, user_last_name, user_email, 
-                             hashed_password, user_avatar, user_created_at, user_deleted_at, 
-                             user_blocked_at, user_updated_at, user_verified_at, 
-                             user_verification_key))
-                             
-            # Add customer role for new user
+
+            # Get coordinates using geocoding
+            full_address = f"{street} {house_number}, {postcode} {city}"
+            geocoder = GeocodingHelper()
+            coords = geocoder.get_coordinates(full_address)
+            
+            if not coords:
+                toast = render_template("___toast.html", message="Could not validate address")
+                return f"""<template mix-target="#toast" mix-bottom>{toast}</template>""", 400
+                
+            formatted_coords = geocoder.format_coordinates(*coords)
+        
+        # Insert or update user
+        if existing_user:
             cursor.execute("""
-                INSERT INTO users_roles (user_role_user_fk, user_role_role_fk)
-                VALUES (%s, %s)
-            """, (user_pk, user_role_pk))
+                UPDATE users 
+                SET user_deleted_at = 0,
+                    user_verified_at = 0,
+                    user_name = %s,
+                    user_last_name = %s,
+                    user_password = %s,
+                    user_verification_key = %s,
+                    user_updated_at = %s
+                WHERE user_email = %s
+            """, (user_name, user_last_name, hashed_password, 
+                 user_verification_key, user_created_at, user_email))
+        else:
+            cursor.execute(
+                'INSERT INTO users VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)',
+                (user_pk, user_name, user_last_name, user_email, hashed_password, 
+                 user_avatar, user_created_at, user_deleted_at, user_blocked_at, 
+                 user_updated_at, user_verified_at, user_verification_key)
+            )
+            
+        # Add user role
+        cursor.execute("""
+            INSERT INTO users_roles (user_role_user_fk, user_role_role_fk)
+            VALUES (%s, %s)
+        """, (user_pk, user_role_pk))
+
+        # If restaurant, save address and coordinates
+        if selected_role["role_name"].lower() == "restaurant":
+            coords_pk = str(uuid.uuid4())
+            cursor.execute("""
+                INSERT INTO coords (
+                    coords_pk, coordinates, restaurant_fk, 
+                    street, house_number, postcode, city, formatted_address
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """, (coords_pk, formatted_coords, user_pk, street, 
+                 house_number, postcode, city, full_address))
 
         email_body = f"""To verify your account, please <a href="{config.DOMAIN}/verify/{user_verification_key}">click here</a>"""
         x.send_email(user_email, "Please verify your account", email_body)
         db.commit()
-
 
         return f"""<template mix-redirect="/login?msg=verify_email&email={user_email}"></template>""", 201
     
@@ -868,6 +980,7 @@ def signup():
     finally:
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
+
 
 ##############################
 @app.post("/login")
@@ -2008,6 +2121,9 @@ def view_restaurant(restaurant_fk):
             toast = render_template("___toast.html", message="Restaurant not found.")
             return f"""<template mix-target="#toast">{toast}</template>""", 404
 
+            
+
+
         # Fetch items associated with the restaurant
         query_items = """SELECT item_pk, item_title, item_price 
                          FROM items 
@@ -2039,9 +2155,9 @@ def view_restaurant(restaurant_fk):
         total_price, _ = calculate_basket_totals(basket)
 
         # Fetch coordinates associated with the restaurant
-        query_coords = """SELECT coordinates 
-                          FROM coords 
-                          WHERE restaurant_fk = %s"""
+        query_coords = """SELECT coordinates, formatted_address, street, house_number, postcode, city 
+                            FROM coords 
+                            WHERE restaurant_fk = %s"""
         cursor.execute(query_coords, (restaurant_fk,))
         coords = cursor.fetchone()  # Assuming one coordinate per restaurant
 
@@ -2129,9 +2245,9 @@ def restaurant_dashboard():
                 item_images[item_fk].append(img['image'])  # Store the image filename
 
         # Fetch coordinates associated with the restaurant
-        query_coords = """SELECT coordinates 
-                          FROM coords 
-                          WHERE restaurant_fk = %s"""
+        query_coords = """SELECT coordinates, street, house_number, postcode, city
+                  FROM coords 
+                  WHERE restaurant_fk = %s"""
         cursor.execute(query_coords, (restaurant_fk,))
         coords = cursor.fetchone()  # Assuming one coordinate per restaurant
 

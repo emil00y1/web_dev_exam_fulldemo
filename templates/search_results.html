@@ -14,17 +14,27 @@
                 <div class="d-grid cols-1 gap-4" sm="cols-2" lg="cols-3">
                     {% for restaurant in restaurants %}
                         <a href="{{ url_for('view_restaurant', restaurant_fk=restaurant.user_pk) }}" 
-                           class="rounded-sm shadow-md d-flex gap-4" 
-                           parent>
-                                <img src="{{ url_for('static', filename='avatars/' + restaurant.user_avatar) if restaurant.user_avatar else url_for('static', filename='avatars/default_avatar.webp') }}"
-                                     alt="{{ restaurant.user_name }}"
-                                     class="max-w-20 obj-f-cover rounded-l-sm">
-                                <div class="py-4">
-                                    <h3 class="text-lg">{{ restaurant.user_name }}</h3>
-                                    {% if restaurant.coordinates %}
-                                        <p class="text-c-gray:-12">{{ restaurant.coordinates }}</p>
-                                    {% endif %}
-                                </div>
+                        class="rounded-sm shadow-md d-flex gap-4" 
+                        parent>
+                            <img src="{{ url_for('static', filename='avatars/' + restaurant.user_avatar) if restaurant.user_avatar else url_for('static', filename='avatars/default_avatar.webp') }}"
+                                alt="{{ restaurant.user_name }}"
+                                class="max-w-20 obj-f-cover rounded-l-sm">
+                            <div class="py-4">
+                                <h3 class="text-lg">{{ restaurant.user_name }}</h3>
+                                {% set has_address = restaurant.street or restaurant.house_number or restaurant.postcode or restaurant.city %}
+                                {% if has_address %}
+                                    <p class="text-c-gray:-14">
+                                        {% if restaurant.street or restaurant.house_number %}
+                                            {{ restaurant.street }}{% if restaurant.house_number %} {% endif %}{{ restaurant.house_number }}{% if restaurant.postcode or restaurant.city %},{% endif %}
+                                        {% endif %}
+                                        {% if restaurant.postcode or restaurant.city %}
+                                            {{ restaurant.postcode }} {{ restaurant.city }}
+                                        {% endif %}
+                                    </p>
+                                {% else %}
+                                    <p class="text-c-gray:-14">Address not available</p>
+                                {% endif %}
+                            </div>
                         </a>
                     {% endfor %}
                 </div>

@@ -3,6 +3,7 @@ import x
 import uuid
 import time
 import random
+from geopy.geocoders import Nominatim
 from werkzeug.security import generate_password_hash
 from faker import Faker
  
@@ -115,6 +116,82 @@ def insert_user(user):
         """
     values = tuple(user.values())
     cursor.execute(q, values)
+
+def populate_addresses_from_coordinates(db, cursor):
+    """
+    Fetches restaurants with coordinates but no address information and adds their address details.
+    Uses individual address components instead of a formatted string for more flexibility in display.
+    """
+    try:
+        geolocator = Nominatim(user_agent="my_food_delivery_app")
+        
+        # Query now doesn't check for formatted_address since we're not using it
+        query = """
+            SELECT c.coords_pk, c.coordinates, c.restaurant_fk 
+            FROM coords c
+            WHERE (c.street IS NULL OR c.street = '')
+            AND (c.house_number IS NULL OR c.house_number = '')
+            AND (c.postcode IS NULL OR c.postcode = '')
+            AND (c.city IS NULL OR c.city = '')
+        """
+        cursor.execute(query)
+        restaurants = cursor.fetchall()
+        
+        print(f"Found {len(restaurants)} restaurants needing address information...")
+        
+        for restaurant in restaurants:
+            try:
+                coords_str = restaurant['coordinates'].strip('[]').split(',')
+                lat = float(coords_str[0].strip())
+                lon = float(coords_str[1].strip())
+                
+                time.sleep(1)  # Rate limiting
+                location = geolocator.reverse(f"{lat}, {lon}")
+                
+                if location and location.raw.get('address'):
+                    address_data = location.raw['address']
+                    
+                    # Extract individual components
+                    street = address_data.get('road', '')
+                    house_number = address_data.get('house_number', '')
+                    postcode = address_data.get('postcode', '')
+                    city = (address_data.get('city') or 
+                           address_data.get('town') or 
+                           address_data.get('village', ''))
+                    
+                    # Update query no longer includes formatted_address
+                    update_query = """
+                        UPDATE coords 
+                        SET street = %s,
+                            house_number = %s,
+                            postcode = %s,
+                            city = %s
+                        WHERE coords_pk = %s
+                    """
+                    cursor.execute(update_query, (
+                        street,
+                        house_number,
+                        postcode,
+                        city,
+                        restaurant['coords_pk']
+                    ))
+                    print(f"✓ Updated address for restaurant {restaurant['restaurant_fk']}:")
+                    print(f"  {street} {house_number}, {postcode} {city}")
+                else:
+                    print(f"✗ Could not find address for coordinates: {restaurant['coordinates']}")
+                
+            except Exception as e:
+                print(f"✗ Error processing restaurant {restaurant['restaurant_fk']}: {str(e)}")
+                continue
+        
+        db.commit()
+        print("\nAddress population complete!")
+        
+    except Exception as ex:
+        print(f"Error during address population: {str(ex)}")
+        if "db" in locals():
+            db.rollback()
+        raise ex
     
 try:
     
@@ -210,6 +287,11 @@ try:
     coords_pk CHAR(36),
     coordinates CHAR(100),
     restaurant_fk CHAR(36),
+    street VARCHAR(255),
+    house_number VARCHAR(20),
+    postcode VARCHAR(20),
+    city VARCHAR(100),
+    formatted_address TEXT,
     PRIMARY KEY(coords_pk),
     FOREIGN KEY(restaurant_fk) REFERENCES users(user_pk)
     );
@@ -476,6 +558,8 @@ try:
 
 # Commit all changes after processing all items
     db.commit()
+
+    populate_addresses_from_coordinates(db, cursor)
 
 
 except Exception as ex:

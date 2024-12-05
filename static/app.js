@@ -28,7 +28,53 @@ document.addEventListener("DOMContentLoaded", () => {
   if (document.querySelector('.image-carousel')) {
     initializeCarousels();
   }
+
+  if (document.querySelector('#view_signup')) {
+    initializeSignupForm();
+  }
 });
+
+// Signup form initialization and handling
+function initializeSignupForm() {
+  const roleSelect = document.getElementById('user_role');
+  const addressFields = document.getElementById('address_fields');
+  
+  if (roleSelect && addressFields) {
+    // Function to handle showing/hiding address fields
+    function toggleAddressFields() {
+      const selectedRole = roleSelect.options[roleSelect.selectedIndex].text.toLowerCase();
+      if (selectedRole === 'restaurant') {
+        // Show address fields and make them required
+        addressFields.classList.remove('d-none');
+        ['street', 'house_number', 'postcode', 'city'].forEach(field => {
+          const input = document.getElementById(field);
+          if (input) {
+            input.required = true;
+            // Add validation classes for visual feedback
+            input.classList.add('validate-input');
+          }
+        });
+      } else {
+        // Hide address fields and remove required attribute
+        addressFields.classList.add('d-none');
+        ['street', 'house_number', 'postcode', 'city'].forEach(field => {
+          const input = document.getElementById(field);
+          if (input) {
+            input.required = false;
+            input.classList.remove('validate-input');
+          }
+        });
+      }
+    }
+
+    // Initial check on page load
+    toggleAddressFields();
+
+    // Listen for role changes
+    roleSelect.addEventListener('change', toggleAddressFields);
+  }
+}
+
 
 function updateQuantity(itemId, change) {
   const decreaseBtn = document.querySelector(

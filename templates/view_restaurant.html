@@ -11,7 +11,22 @@
       <div>
         <h1 class="text-c-black text-2xl">{{ restaurant['user_name'] }}</h1>
         {% if coords %}
-        <p class="text-c-gray">Coordinates: {{ coords['coordinates'] }}</p>
+            {% set has_address = coords.street or coords.house_number or coords.postcode or coords.city %}
+            {% if has_address %}
+                <p class="text-c-gray:-14">
+                    {# Show available address components #}
+                    {% if coords.street or coords.house_number %}
+                        {{ coords.street }}{% if coords.house_number %} {% endif %}{{ coords.house_number }}{% if coords.postcode or coords.city %},{% endif %}
+                    {% endif %}
+                    {% if coords.postcode or coords.city %}
+                        {{ coords.postcode }} {{ coords.city }}
+                    {% endif %}
+                </p>
+            {% else %}
+                <p class="text-c-gray:-14">Address not available</p>
+            {% endif %}
+        {% else %}
+            <p class="text-c-gray:-14">Address not available</p>
         {% endif %}
       </div>
     </div>

@@ -23,10 +23,20 @@
           />
 
           <section class="ml-4 text-a-left">
-            <h2 class="text-c-tealblue:-5">{{ coord["user_name"] }}</h2>
-            <p class="text-c-gray:-6">
-              Coordinates: {{ coord["coordinates"] }}
-            </p>
+              <h2 class="text-c-tealblue:-5">{{ coord["user_name"] }}</h2>
+              {% set has_address = coord.street or coord.house_number or coord.postcode or coord.city %}
+              {% if has_address %}
+                  <p class="text-c-gray:-14">
+                      {% if coord.street or coord.house_number %}
+                          {{ coord.street }}{% if coord.house_number %} {% endif %}{{ coord.house_number }}{% if coord.postcode or coord.city %},{% endif %}
+                      {% endif %}
+                      {% if coord.postcode or coord.city %}
+                          {{ coord.postcode }} {{ coord.city }}
+                      {% endif %}
+                  </p>
+              {% else %}
+                  <p class="text-c-gray:-14">Address not available</p>
+              {% endif %}
           </section>
         </div>
       </a>
