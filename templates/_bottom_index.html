@@ -97,7 +97,7 @@
             {% for coord in coords %}
             { 
                 coords: {{ coord["coordinates"] }}, 
-                popup: `<a href="/restaurant={{ coord['restaurant_fk'] }}" class="text-c-tealblue:-5 hover:underline">Restaurant: {{ coord['user_name'] }}</a>`
+                popup: `<a href="/restaurant/{{ coord['restaurant_fk'] }}" class="text-c-tealblue:-5 hover:underline">Restaurant: {{ coord['user_name'] }}</a>`
         }{% if not loop.last %},{% endif %}
             {% endfor %}
         ];
@@ -114,7 +114,7 @@
 
 
 
-    setTimeout(test, 3000)
+    setTimeout(test, 1000)
     
 </script>
 

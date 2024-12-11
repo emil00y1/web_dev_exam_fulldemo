@@ -32,6 +32,10 @@ document.addEventListener("DOMContentLoaded", () => {
   if (document.querySelector('#view_signup')) {
     initializeSignupForm();
   }
+  
+  
+  initializeTabs();
+  
 });
 
 // Signup form initialization and handling
@@ -189,6 +193,64 @@ function initializeCarousels() {
     next.style.visibility = totalImages > 1 ? 'visible' : 'hidden';
   });
 }
+
+
+function initializeTabs() {
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    // Function to switch tabs - we'll extract this so we can reuse it
+    function switchTab(tabId) {
+        // Update button styles
+        tabButtons.forEach(btn => {
+            if (btn.dataset.tab === tabId) {
+                // Style for active tab
+                btn.classList.add('active', 'text-c-tealblue:-5');
+                btn.classList.remove('text-c-gray:-5');
+            } else {
+                // Style for inactive tabs
+                btn.classList.remove('active', 'text-c-tealblue:-5');
+                btn.classList.add('text-c-gray:-5');
+            }
+        });
+        
+        // Update content visibility
+        tabContents.forEach(content => {
+            if (content.id === tabId) {
+                content.classList.remove('d-none');
+                // Resize map if showing the discover tab
+                if (tabId === 'discover' && window.map) {
+                    window.map.invalidateSize();
+                }
+            } else {
+                content.classList.add('d-none');
+            }
+        });
+
+        // Save the active tab to localStorage
+        localStorage.setItem('activeTab', tabId);
+    }
+    
+    // Add click handlers to tab buttons
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            switchTab(button.dataset.tab);
+        });
+    });
+
+    // On page load, check localStorage for saved tab preference
+    const savedTab = localStorage.getItem('activeTab');
+    if (savedTab) {
+        // If we have a saved preference, switch to that tab
+        switchTab(savedTab);
+    } else {
+        // If no saved preference, default to 'discover' tab
+        switchTab('discover');
+    }
+}
+
+
+
 
 // MOJO CUSTOMIZATION
 mojo({
