@@ -93,11 +93,10 @@ def insert_item(item):
     """, (item["item_pk"], item["restaurant_fk"], item["item_title"], item["item_price"],item["item_deleted_at"],item["item_blocked_at"], item["item_updated_at"]))
 
 def insert_item_image(image):
-    # Insert the item into the items table
     cursor.execute("""
-        INSERT INTO items_image (item_fk, image)
-        VALUES (%s, %s)
-    """, (image["item_fk"], image["image"]))
+        INSERT INTO items_image (image_pk, item_fk, image)
+        VALUES (%s, %s, %s)
+    """, (str(uuid.uuid4()), image["item_fk"], image["image"]))
 
 def insert_coords(coord):
     try:
@@ -272,11 +271,12 @@ try:
     cursor.execute("DROP TABLE IF EXISTS items_image")
     q = """
         CREATE TABLE items_image (
-    item_fk CHAR(36),
-    image VARCHAR(100),
-    FOREIGN KEY(item_fk) REFERENCES items(item_pk)
-    );
-    """
+            image_pk CHAR(36) PRIMARY KEY,
+            item_fk CHAR(36),
+            image VARCHAR(100),
+            FOREIGN KEY(item_fk) REFERENCES items(item_pk) ON DELETE CASCADE
+            );
+        """
     cursor.execute(q)
  
     ##############################
@@ -547,14 +547,16 @@ try:
     cursor.execute("SELECT item_pk FROM items")
     items = cursor.fetchall()
 
-    for item in items:  
-        item_pk = item["item_pk"] 
-        for _ in range(3):  # Generate and insert 3 images per item
+    for item in items:
+        item_pk = item["item_pk"]
+        # Generate 1-3 random images per item
+        num_images = random.randint(1, 3)
+        for _ in range(num_images):
             image = {
-            "item_fk": item_pk,
-            "image": "dish_" + str(random.randint(1, 100)) + ".jpg",
+                "item_fk": item_pk,
+                "image": f"dish_{random.randint(1, 100)}.jpg"
             }
-        insert_item_image(image)  # Insert the image into the database
+            insert_item_image(image)
 
 # Commit all changes after processing all items
     db.commit()

@@ -223,7 +223,8 @@ def view_index():
             prev_page=prev_page,
             user=session.get("user"),
             basket=session.get("basket", []),
-            total_price=calculate_basket_totals(session.get("basket", []))[0]
+            total_price=calculate_basket_totals(session.get("basket", []))[0],
+            page_title="Your Favorite Restaurants in One Place"
         )
 
     except Exception as ex:
@@ -357,7 +358,8 @@ def search_results():
             item_images=item_images,
             user=session.get("user"),
             basket=session.get("basket", []),
-            total_price=calculate_basket_totals(session.get("basket", []))[0]
+            total_price=calculate_basket_totals(session.get("basket", []))[0],
+            page_title=f"""{query} - Wolt Search"""
         )
         
     except Exception as ex:
@@ -387,7 +389,7 @@ def view_signup():
 
 
         # Render the signup page with roles
-        return render_template("view_signup.html", x=x, title="Signup", roles=roles)
+        return render_template("view_signup.html", x=x, title="Signup", roles=roles, page_title="Sign up for Wolt")
     except Exception as ex:
         ic(ex)
         if "db" in locals(): db.rollback()
@@ -421,7 +423,8 @@ def view_login():
         title="Login", 
         message=display_message,
         email=email,
-        msg=msg
+        msg=msg,
+        page_title="Log in to Wolt"
     )
 
 
@@ -481,7 +484,8 @@ def view_forgot_password():
         return redirect(url_for("show_profile"))
     return render_template(
         "view_forgot_password.html",
-        x=x
+        x=x,
+        page_title="Password Recovery"
     )
 
 @app.get("/createpassword")
@@ -509,7 +513,8 @@ def view_create_password():
 
         return render_template(
             "view_create_password.html",
-            x=x
+            x=x,
+            page_title="Create new password"
         )
     finally:
         if 'cursor' in locals():
@@ -552,7 +557,7 @@ def view_admin():
         """)
         items = cursor.fetchall()
         
-        return render_template("view_admin.html", users=users, time=time, user=user, items=items, basket=basket, total_price=total_price)
+        return render_template("view_admin.html", users=users, time=time, user=user, items=items, basket=basket, total_price=total_price, page_title="Admin Dashboard")
     finally:
         if 'cursor' in locals(): cursor.close()
         if 'db' in locals(): db.close()
@@ -593,7 +598,8 @@ def show_profile():
         coords=coords,
         time=time,
         total_price=total_price,
-        basket=basket
+        basket=basket,
+        page_title="Profile"
     )
 ##############################
 
@@ -619,7 +625,8 @@ def view_checkout():
             "view_checkout.html",
             basket=basket,
             total_price=total_price,
-            user=session.get("user")
+            user=session.get("user"),
+            page_title="Checkout"
         )
                              
     except Exception as ex:
@@ -641,7 +648,7 @@ def view_order_confirmation():
     if not session.get("last_order"):
         return redirect(url_for("view_index"))
         
-    return render_template("view_order_confirmation.html", order=session.get("last_order"), user=session.get("user"))
+    return render_template("view_order_confirmation.html", order=session.get("last_order"), user=session.get("user"), page_title="Order Confirmation")
 
 
 
@@ -2261,7 +2268,8 @@ def view_restaurant(restaurant_fk):
             item_images=item_images,
             user=user,
             basket=basket,
-            total_price=total_price
+            total_price=total_price,
+            page_title=restaurant["user_name"]
         )
     except Exception as ex:
         ic(ex)
@@ -2528,102 +2536,140 @@ def edit_item(item_pk):
 
 
 ############# ADD IMAGE ITEMS ################
-@app.post("/items/<item_pk>/add_image")
+@app.post("/restaurant/add_item_image/<item_pk>")
 def add_item_image(item_pk):
     try:
-        user = session.get("user")
         if not "restaurant" in session.get("user", {}).get("roles", []): 
             return redirect(url_for("view_login"))
 
-        # Validate the item_pk (ensure it's a valid UUID)
-        item_pk = x.validate_uuid4(item_pk)
-        restaurant_fk = user["user_pk"]
-
-        # Image upload folder
-        UPLOAD_FOLDER = os.path.join('static', 'dishes')
-        if not os.path.exists(UPLOAD_FOLDER):
-            os.makedirs(UPLOAD_FOLDER)
-
-        # Check if file is in the request
         if 'item_image' not in request.files:
-            return "No image file provided.", 400
+            return f"""
+                <template mix-target="#image-error-{item_pk}">
+                    <span class="text-c-red:-14">No image file provided</span>
+                </template>
+            """, 400
 
         file = request.files['item_image']
         if not file or not file.filename:
-            return "No selected file.", 400
+            return f"""
+                <template mix-target="#image-error-{item_pk}">
+                    <span class="text-c-red:-14">No selected file</span>
+                </template>
+            """, 400
 
-        # Validate file type
+        # Check file type
         if not file.filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp')):
-            return "Invalid file type. Please upload an image.", 400
+            return f"""
+                <template mix-target="#image-error-{item_pk}">
+                    <span class="text-c-red:-14">Invalid file type. Please upload an image</span>
+                </template>
+            """, 400
 
-        # Optimize and save the image
+        db, cursor = x.db()
+        
+        # Check number of existing images
+        cursor.execute("""
+            SELECT COUNT(*) as count FROM items_image WHERE item_fk = %s
+        """, (item_pk,))
+        result = cursor.fetchone()
+        
+        if result['count'] >= 3:
+            return f"""
+                <template mix-target="#image-error-{item_pk}">
+                    <span class="text-c-red:-14">Maximum of 3 images allowed per item</span>
+                </template>
+            """, 400
+
+        # Process and save the image
         optimized_image = optimize_image(file)
-        filename = f"item_{item_pk}_{int(time.time())}.webp"  # Generate unique filename
-        filepath = os.path.join(UPLOAD_FOLDER, filename)
+        filename = f"item_{item_pk}_{int(time.time())}.webp"
+        # Changed this line to use the static/dishes path directly
+        filepath = os.path.join('static', 'dishes', filename)
 
         with open(filepath, 'wb') as f:
             f.write(optimized_image.getvalue())
 
-        # Save the image reference in the database with the correct item_fk (item_pk)
-        db, cursor = x.db()
-        query = """INSERT INTO items_image (item_fk, image) VALUES (%s, %s)"""
-        cursor.execute(query, (item_pk, filename))  # Save image associated with the specific item
+        # Save to database
+        cursor.execute("""
+            INSERT INTO items_image (image_pk, item_fk, image)
+            VALUES (%s, %s, %s)
+        """, (str(uuid.uuid4()), item_pk, filename))
+
+
+        cursor.execute("""
+            UPDATE items 
+            SET item_updated_at = %s 
+            WHERE item_pk = %s
+        """, (int(time.time()), item_pk))
+        
         db.commit()
 
-        print(f"Image successfully added for item {item_pk}.")
-
-        # Redirect back to the item management page
-        return redirect("/restaurant")
+        # Clear any existing error message and redirect
+        return f"""
+            <template mix-target="#image-error-{item_pk}">
+                <span></span>
+            </template>
+            <template mix-redirect="/restaurant"></template>
+        """
 
     except Exception as ex:
-        print(f"Error adding item image: {ex}")
-        if "db" in locals():
-            db.rollback()
-        return f"Error adding item image: {ex}", 500
-
+        ic(ex)
+        if "db" in locals(): db.rollback()
+        return f"""
+            <template mix-target="#image-error-{item_pk}">
+                <span class="text-c-red:-14">An error occurred while uploading the image: {str(ex)}</span>
+            </template>
+        """, 500
     finally:
-        if "cursor" in locals():
-            cursor.close()
-        if "db" in locals():
-            db.close()
+        if "cursor" in locals(): cursor.close()
+        if "db" in locals(): db.close()
 
-
-#####
-
-@app.post("/items/<item_pk>/delete_image/<image_filename>")
+@app.delete("/restaurant/delete_item_image/<item_pk>/<image_filename>")
 def delete_item_image(item_pk, image_filename):
     try:
-        # Ensure the user is logged in
-        user = session.get("user")
-        if not user:
-            return "Please log in to delete an image.", 401
+        if not "restaurant" in session.get("user", {}).get("roles", []): 
+            return redirect(url_for("view_login"))
 
-        # Ensure the user has the role "restaurant"
-        if "restaurant" not in user.get("roles", []):
-            return "Access restricted to restaurant users only.", 403
+        db, cursor = x.db()
+        
+        # First verify the image belongs to the restaurant's item
+        cursor.execute("""
+            SELECT i.image_pk
+            FROM items_image i
+            JOIN items it ON i.item_fk = it.item_pk
+            WHERE it.restaurant_fk = %s AND i.item_fk = %s AND i.image = %s
+        """, (session["user"]["user_pk"], item_pk, image_filename))
+        
+        if not cursor.fetchone():
+            toast = render_template("___toast.html", message="Image not found or unauthorized")
+            return f"""<template mix-target="#toast">{toast}</template>""", 404
 
-        # Ensure the file exists and delete it
+        # Delete the physical file from the dishes folder inside static
         image_path = os.path.join('static', 'dishes', image_filename)
         if os.path.exists(image_path):
             os.remove(image_path)
 
-        # Now delete the image record from the database
-        db, cursor = x.db()
-        query_delete_image = """DELETE FROM items_image 
-                                WHERE item_fk = %s AND image = %s"""
-        cursor.execute(query_delete_image, (item_pk, image_filename))
-        db.commit()
+        # Delete from database
+        cursor.execute("""
+            DELETE FROM items_image 
+            WHERE item_fk = %s AND image = %s
+        """, (item_pk, image_filename))
+        
+        cursor.execute("""
+            UPDATE items 
+            SET item_updated_at = %s 
+            WHERE item_pk = %s
+        """, (int(time.time()), item_pk))
 
-        print(f"Image {image_filename} deleted for item {item_pk}.")
-        return redirect(url_for('restaurant_dashboard'))
+        db.commit()
+        
+        return """<template mix-redirect="/restaurant"></template>"""
 
     except Exception as ex:
-        print(f"Error deleting image {image_filename} for item {item_pk}: {ex}")
-        if "db" in locals():
-            db.rollback()
-        return f"Error deleting image {image_filename} for item {item_pk}: {ex}", 500
+        ic(ex)
+        if "db" in locals(): db.rollback()
+        toast = render_template("___toast.html", message=str(ex))
+        return f"""<template mix-target="#toast">{toast}</template>""", 500
     finally:
-        if "cursor" in locals():
-            cursor.close()
-        if "db" in locals():
-            db.close()
+        if "cursor" in locals(): cursor.close()
+        if "db" in locals(): db.close()

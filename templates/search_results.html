@@ -1,6 +1,6 @@
 {% include "_top.html" %}
 
-<main class="mx-4 mb-16" md="mx-6" lg="mx-8">
+<main class="mx-4 max-w-1240px mb-16"  md="mx-6" lg=" mx-8" xl="a-self-center px-8 w-full">
     <section class="mx-auto" sm="mt-8">
         <h1 class="text-xl mb-6">Search Results for "{{ query }}"</h1>
         
@@ -10,7 +10,7 @@
         
         {% if restaurants %}
             <div class="mb-8">
-                <h2 class="text-lg mb-4">Restaurants</h2>
+                <h2 class="text-lg mb-4 text-w-semibold">Restaurants</h2>
                 <div class="d-grid cols-1 gap-4" sm="cols-2" lg="cols-3">
                     {% for restaurant in restaurants %}
                         <a href="{{ url_for('view_restaurant', restaurant_fk=restaurant.user_pk) }}" 
@@ -43,7 +43,7 @@
         
      {% if items %}
         <div>
-            <h2 class="text-xl mb-4">Menu Items</h2>
+            <h2 class="text-xl mb-4 text-w-semibold">Menu Items</h2>
             <div class="d-grid cols-1 gap-6" sm="cols-2 gap-8" lg="cols-3">
                 {% for item in items %}
                     <a href="{{ url_for('view_restaurant', restaurant_fk=item.restaurant_fk) }}" 
