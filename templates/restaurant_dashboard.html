@@ -1,6 +1,6 @@
 {% include "_top.html" %}
 
-<main class="w-95vw max-w-1200 mx-auto mb-16">
+<main class="mx-4 max-w-1240px mb-16"  md="mx-6" lg=" mx-8" xl="a-self-center px-8 w-full">
     <!-- Restaurant Details -->
     <div class="d-flex a-items-center mb-6">
         <img src="{{ url_for('static', filename='avatars/' + restaurant['user_avatar']) if restaurant['user_avatar'] else url_for('static', filename='avatars/profile_1.jpg') }}" 
@@ -15,26 +15,26 @@
     </div>
 
     <!-- Form for Adding New Item -->
-    <h2 class="text-xl mb-4">Add New Item</h2>
-    <form method="POST" action="{{ url_for('add_item') }}">
-        <div class="mb-4">
+    <h2 class="text-xl mb-6 mt-6 text-w-bold text-160">Add New Item</h2>
+    <form class="max-w-400px mb-8" method="POST" action="{{ url_for('add_item') }}">
+        <div class="mb-4 d-flex flex-col">
             <label for="item_title" class="block text-c-black">Item Title</label>
-            <input type="text" name="item_title" id="item_title" required class="w-full p-2 border rounded">
+            <input type="text" name="item_title" id="item_title" required class="w-full p-2 border rounded" focus="outline-1 outline-c-tealblue:-5">
         </div>
-        <div class="mb-4">
+        <div class="mb-4 d-flex flex-col">
             <label for="item_price" class="block text-c-black">Item Price</label>
-            <input type="number" step="0.01" name="item_price" id="item_price" required class="w-full p-2 border rounded">
+            <input type="number" step="0.01" name="item_price" id="item_price" required class="w-full p-2 border rounded max-w-200px" focus="outline-1 outline-c-tealblue:-5">
         </div>
-        <button type="submit" class="bg-c-tealblue py-2 px-4 text-c-white rounded">Add Item</button>
+        <button type="submit" class="bg-c-tealblue:-5 py-2 px-4 text-c-white" focus="outline-1 outline-c-tealblue:-5 outline-o-0.5" hover="cursor-pointer bg-c-tealblue:-8">Add Item</button>
     </form>
 
     <!-- Menu Items -->
-    <h2 class="text-xl mb-4 mt-6">Menu Items</h2>
-    <div class="d-grid cols-2 gap-4">
+    <h2 class="text-xl mb-6 mt-6 text-w-bold text-180">Menu Items</h2>
+    <div class="d-grid cols-1 gap-8" md="cols-2" xl="cols-3">
         {% for item in items %}
-        <article class="pa-4 border-2 border-s-solid border-c-tealblue:-3 shadow-sm rounded-sm relative">
-            <h3 class="">{{ item['item_title'] }}</h3>
-            <p class="text-c-gray">Price: ${{ item['item_price'] }}</p>
+        <article class="pa-4 rounded-md border-1 border-c-gray:+12 p-relative d-flex flex-col">
+            <h3 class="text-w-bold text-150 ma-0">{{ item['item_title'] }}</h3>
+            <p class="text-w-semibold text-c-tealblue:-5 text-110 ma-0">${{ item['item_price'] }}</p>
 
             {% if item['item_updated_at'] != 0 %}
                 {% set item_updated_at = time.localtime(item['item_updated_at'])|strftime('%A, %d %B %Y') %}
@@ -44,18 +44,25 @@
             {% endif %}
 
             <!-- Images for the Current Item -->
-            <div class="image-gallery d-flex gap-2 mb-4">
+            <div class="image-gallery max-w-450px d-grid gap-2 mt-4 mb-4 cols-{{ item_images.get(item['item_pk'], [])|length }}">
                 {% if item['item_pk'] in item_images %}
                     {% for img in item_images[item['item_pk']] %}
-                        <div class="relative d-inline-block">
+                        <div class="p-relative max-w-38">
                             <img
                                 src="{{ url_for('static', filename='dishes/' + img) }}"
                                 alt="Item Image"
-                                class="w-32 h-32 object-cover rounded-md shadow-sm"
+                                class="w-full  aspect-ratio:1 obj-f-cover rounded-md shadow-sm" 
                             />
-                            <form method="POST" action="{{ url_for('delete_item_image', item_pk=item['item_pk'], image_filename=img) }}" class="absolute top-0 right-0">
-                                <button type="submit" class="bg-c-red:-8 text-c-white rounded-full d-flex a-items-center hover:bg-c-red:-16 transition-colors">
-                                    Delete
+                            <form method="POST" action="{{ url_for('delete_item_image', item_pk=item['item_pk'], image_filename=img) }}" class="p-absolute top-0 right-0">
+                                <button type="submit" class="rounded-full d-flex a-items-center j-content-center bg-c-transparent pa-0.5 ma-1.5 h-min-content" hover="cursor-pointer bg-c-white:-8" parent>
+                                    <svg xmlns="http://www.w3.org/2000/svg" 
+                                        class="fill-c-white:-2" 
+                                        parent-hover="fill-c-black:+14" 
+                                        height="20" 
+                                        width="20" 
+                                        viewBox="0 0 24 24">
+                                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                                    </svg>
                                 </button>
                             </form>
                         </div>
@@ -66,21 +73,24 @@
             </div>
 
             <!-- Form for Adding Images to the Item -->
-            <form method="POST" action="{{ url_for('add_item_image', item_pk=item['item_pk']) }}" enctype="multipart/form-data" class="mb-5">
-                <input type="file" name="item_image" id="item_image" accept="image/*" required>
-                <button type="submit">Upload</button>
+            <form method="POST" action="{{ url_for('add_item_image', item_pk=item['item_pk']) }}" enctype="multipart/form-data" class="mb-8 d-flex flex-col">
+                <label for="item_image">Add image</label>
+                <input type="file" class="mb-4 cursor-pointer h-min-content py-4" xs="max-w-max-content" name="item_image" id="item_image" accept="image/*" required focus="outline-1 outline-c-tealblue:-5">
+                <button type="submit" class="bg-c-tealblue:-5 py-2 px-4 text-c-white" xs="max-w-max-content" hover="cursor-pointer bg-c-tealblue:-8">Upload</button focus="outline-1 outline-c-tealblue:-5 outline-o-0.5">
             </form>
 
             <!-- Action Buttons -->
-            <div class="absolute top-4 right-4 d-flex gap-2">
+            <div class="d-flex gap-2 mt-auto j-content-end">
                 <!-- Edit Item Button -->
                 <button 
                     onclick="document.getElementById('edit-item-{{ item['item_pk'] }}').style.display='block';" 
-                    class="bg-c-yellow py-1 px-3 text-c-white rounded">Edit</button>
+                    class="py-1 px-3 text-c-black:+14 rounded bg-c-transparent"
+                    focus="outline-1 outline-c-tealblue:-5"
+                    hover="bg-c-white:-8 cursor-pointer">Edit</button>
 
                 <!-- Delete Item Button -->
                 <form method="POST" action="{{ url_for('delete_item', item_pk=item['item_pk']) }}">
-                    <button type="submit" class="bg-c-red py-1 px-3 text-c-white rounded">Delete</button>
+                    <button type="submit" class="bg-c-red:-8 py-1 px-3 text-c-white rounded" focus="outline-1 outline-c-tealblue:-5" hover="cursor-pointer bg-c-red:-16">Delete</button>
                 </form>
             </div>
 

@@ -523,17 +523,16 @@ def view_create_password():
 @app.get("/admin")
 @x.no_cache
 def view_admin():
-    # Check if user is logged in
-    if not session.get("user", ""): 
+    # Check if user is logged in and admin
+    user = session.get("user")
+
+    if not "admin" in user.get("roles", "") or not session.get("user", ""):
         return redirect(url_for("view_login"))
     
-    user = session.get("user")
     basket = session.get("basket", [])
     total_price, _ = calculate_basket_totals(basket)
     
-    # Check if user has admin role
-    if not "admin" in user.get("roles", ""):
-        return redirect(url_for("view_login"))
+    
     
     try:
         # Get all users from database
@@ -2284,13 +2283,13 @@ def restaurant_dashboard():
     try:
         # Ensure the user is logged in
         user = session.get("user")
+        if not "restaurant" in user.get("roles", "") or not session.get("user", ""):
+            return redirect(url_for("view_login"))
 
         #basket
         basket = session.get("basket", [])
         total_price, _ = calculate_basket_totals(basket)
 
-        if not user:
-            return "Please log in to access your dashboard.", 401
 
         # Ensure the user has the role "restaurant"
         if "restaurant" not in user.get("roles", []):
