@@ -1,4 +1,4 @@
-from flask import Flask, session, render_template, redirect, url_for, make_response, request, redirect
+from flask import Flask, session, render_template, redirect, url_for, make_response, request, redirect, jsonify
 from flask_session import Session
 from werkzeug.security import generate_password_hash
 from werkzeug.security import check_password_hash
@@ -173,77 +173,57 @@ def _________GET_________(): pass
 ##############################
 
 ##############################
-@app.get("/test-set-redis")
-def view_test_set_redis():
-    redis_host = "redis"
-    redis_port = 6379
-    redis_client = redis.Redis(host=redis_host, port=redis_port, decode_responses=True)    
-    redis_client.set("name", "Santiago", ex=10)
-    # name = redis_client.get("name")
-    return "name saved"
-
-@app.get("/test-get-redis")
-def view_test_get_redis():
-    redis_host = "redis"
-    redis_port = 6379
-    redis_client = redis.Redis(host=redis_host, port=redis_port, decode_responses=True)    
-    name = redis_client.get("name")
-    if not name: name = "no name"
-    return name
-
-##############################
 @app.get("/")
 def view_index():
     try:
+        # Get pagination parameters
         page = request.args.get("page", default=1, type=int)
-        per_page = 7
+        per_page = 10  # Show 12 restaurants per page
         offset = (page - 1) * per_page
 
         db, cursor = x.db()
-        # Modified query to include address fields
-        q = """SELECT coords.*, users.user_name, users.user_avatar,
-                      coords.street, coords.house_number, coords.postcode, coords.city
-               FROM coords 
-               JOIN users ON coords.restaurant_fk = users.user_pk
-               LIMIT %s OFFSET %s"""
-        cursor.execute(q, (per_page, offset))
-        rows = cursor.fetchall()
+        
+        # Query for ALL coordinates (for map)
+        cursor.execute("""
+            SELECT coords.coordinates, coords.restaurant_fk 
+            FROM coords 
+            JOIN users ON coords.restaurant_fk = users.user_pk
+            WHERE users.user_deleted_at = 0
+        """)
+        all_coords = cursor.fetchall()
+        
+        # Query for paginated restaurant list
+        cursor.execute("""
+            SELECT coords.*, users.user_name, users.user_avatar,
+                   coords.street, coords.house_number, coords.postcode, coords.city
+            FROM coords 
+            JOIN users ON coords.restaurant_fk = users.user_pk
+            WHERE users.user_deleted_at = 0
+            LIMIT %s OFFSET %s
+        """, (per_page, offset))
+        paginated_restaurants = cursor.fetchall()
 
-        # Fetch total count of restaurants for pagination
-        cursor.execute("SELECT COUNT(*) AS total FROM coords")
+        # Get total count for pagination
+        cursor.execute("""
+            SELECT COUNT(*) AS total 
+            FROM coords 
+            JOIN users ON coords.restaurant_fk = users.user_pk
+            WHERE users.user_deleted_at = 0
+        """)
         total = cursor.fetchone()["total"]
 
         next_page = page + 1 if offset + per_page < total else None
         prev_page = page - 1 if page > 1 else None
 
-        user = session.get("user")
-        basket = session.get("basket", [])
-        total_price, _ = calculate_basket_totals(basket)
-
-        # Enhanced coords list with address information
-        coords = [
-            {
-                "coords_pk": row["coords_pk"],
-                "coordinates": row["coordinates"],
-                "restaurant_fk": row["restaurant_fk"],
-                "user_name": row["user_name"],
-                "user_avatar": row["user_avatar"],
-                "street": row["street"],
-                "house_number": row["house_number"],
-                "postcode": row["postcode"],
-                "city": row["city"]
-            }
-            for row in rows
-        ]
-
         return render_template(
             "view_index.html",
-            coords=coords,
+            coords=paginated_restaurants,  # For restaurant list
+            all_coords=all_coords,  # For map
             next_page=next_page,
             prev_page=prev_page,
-            user=user,
-            basket=basket,
-            total_price=total_price
+            user=session.get("user"),
+            basket=session.get("basket", []),
+            total_price=calculate_basket_totals(session.get("basket", []))[0]
         )
 
     except Exception as ex:
@@ -260,6 +240,41 @@ def view_index():
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
 
+
+@app.get("/coordinates")
+def get_coordinates():
+    try:
+        db, cursor = x.db()
+        cursor.execute("""
+            SELECT 
+                coords.coordinates, 
+                coords.restaurant_fk,
+                users.user_name,
+                CONCAT(coords.street, ' ', coords.house_number, ', ', 
+                       coords.postcode, ' ', coords.city) as address
+            FROM coords 
+            JOIN users ON coords.restaurant_fk = users.user_pk
+            WHERE users.user_deleted_at = 0
+        """)
+        coordinates = cursor.fetchall()
+        
+        # Convert coordinates to a serializable format
+        serializable_coords = []
+        for coord in coordinates:
+            serializable_coords.append({
+                'coordinates': coord['coordinates'],
+                'restaurant_fk': coord['restaurant_fk'],
+                'user_name': coord['user_name'],
+                'address': coord['address']
+            })
+        
+        return jsonify(serializable_coords)
+        
+    except Exception as ex:
+        return jsonify({"error": "Failed to fetch coordinates"}), 500
+    finally:
+        if "cursor" in locals(): cursor.close()
+        if "db" in locals(): db.close()
 
 ##############################
 @app.get("/search")

@@ -1,70 +1,81 @@
 {% include "_top.html" %}
-<main class="mx-4 mb-16" md="mx-6" lg="mx-8">
+<main class="mx-4 mb-16 max-w-1240px " md="mx-6" lg=" mx-8" xl="a-self-center px-8 w-full">
   <!-- Tab Navigation -->
-  <div class="tab-container d-flex j-content-center mb-6 gap-4">
-    <button class="tab-button px-4 py-4 text-c-tealblue:-5 cursor-pointer bg-c-transparent" data-tab="discover">
+  <div class="tab-container d-flex j-content-center mb-6 mt-2 gap-4" md="mt-4 mb-8">
+    <button
+      class="tab-button px-4 py-4 text-c-tealblue:-5 cursor-pointer bg-c-transparent d-flex a-items-center gap-2"
+      data-tab="discover"
+    >
+      <svg class="fill-c-tealblue:-5" xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"><path d="M480-480q33 0 56.5-23.5T560-560q0-33-23.5-56.5T480-640q-33 0-56.5 23.5T400-560q0 33 23.5 56.5T480-480Zm0 294q122-112 181-203.5T720-552q0-109-69.5-178.5T480-800q-101 0-170.5 69.5T240-552q0 71 59 162.5T480-186Zm0 106Q319-217 239.5-334.5T160-552q0-150 96.5-239T480-880q127 0 223.5 89T800-552q0 100-79.5 217.5T480-80Zm0-480Z"/></svg>
       Discover
     </button>
-    <button class="tab-button px-8 py-4  cursor-pointer bg-c-transparent" data-tab="restaurants">
-      Restaurants
+    <button
+      class="tab-button px-8 py-4 cursor-pointer bg-c-transparent text-c-gray:-5 d-flex a-items-center gap-2"
+      data-tab="restaurants"
+    >
+      <svg class="fill-c-gray:-5" xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px"><path d="M280-80v-366q-51-14-85.5-56T160-600v-280h80v280h40v-280h80v280h40v-280h80v280q0 56-34.5 98T360-446v366h-80Zm400 0v-320H560v-280q0-83 58.5-141.5T760-880v800h-80Z"/></svg>
+        Restaurants
     </button>
   </div>
 
-
   <!-- Tab Content -->
   <div class="tab-container">
-    <div id="discover" class="tab-content">
-      <h1 class="mb-8 text-w-bold">Restaurants near you</h1>
+    <div class="mb-8" sm="mb-10" md="mb-14">
+      <h1 class=" text-w-bold text-180" sm="text-200">Restaurants - Copenhagen</h1>
+        <p class="text-110" sm="text-120">Find your favorite restaurants near you!</p>
+    </div>
 
-      <div id="map" class="w-full min-h-50vh z-1"></div>
+    <div id="discover" class="tab-content">
+      <div id="map" class="w-full min-h-60vh z-1" sm="min-h-70vh"></div>
     </div>
 
     <div id="restaurants" class="tab-content d-none">
-      <h1 class="mb-8 text-w-bold">Restaurants - Copenhagen</h1>
-      <div class="restaurant-container">
+      <div class="restaurant-container d-grid cols-1 gap-4" md="cols-2 gap-y-8 gap-x-6">
         {% for coord in coords %}
-        <a href="restaurant/{{coord['restaurant_fk']}}">
-          <div
-            class="rounded-sm shadow-md d-flex a-items-center mb-3 p-4 hover:bg-c-gray:-1 transition-all"
-          >
-            <img
-              src="{{ url_for('static', filename='avatars/' + coord['user_avatar']) if coord['user_avatar'] else url_for('static', filename='avatars/profile_1.jpg') }}"
-              alt="User Avatar"
-              class="w-24 h-24 rounded-sm border-2"
-            />
-            <section class="ml-4 text-a-left">
-              <h2 class="text-c-tealblue:-5">{{ coord["user_name"] }}</h2>
-              {% set has_address = coord.street or coord.house_number or
-              coord.postcode or coord.city %} {% if has_address %}
-              <p class="text-c-gray:-14">
-                {% if coord.street or coord.house_number %} {{ coord.street }}{%
-                if coord.house_number %} {% endif %}{{ coord.house_number }}{%
-                if coord.postcode or coord.city %},{% endif %} {% endif %} {% if
-                coord.postcode or coord.city %} {{ coord.postcode }} {{
-                coord.city }} {% endif %}
-              </p>
-              {% else %}
-              <p class="text-c-gray:-14">Address not available</p>
-              {% endif %}
-            </section>
-          </div>
-        </a>
+        <article class="ts-175" hover="-translate-y-1 shadow-c-tealblue:+38">
+          <a href="restaurant/{{coord['restaurant_fk']}}" >
+            <div
+              class="rounded-sm shadow-sm d-flex transition-all h-28" sm="h-32" md="h-38"
+            >
+              <img
+                src="{{ url_for('static', filename='avatars/' + coord['user_avatar']) if coord['user_avatar'] else url_for('static', filename='avatars/profile_1.jpg') }}"
+                alt="User Avatar"
+                class="rounded-l-sm h-full aspect-ratio:1 obj-f-cover"
+              />
+              <section class="ml-2 text-a-left pa-2" sm="pa-4">
+                <h2 class="text-c-tealblue:-5 mb-1">{{ coord["user_name"] }}</h2>
+                {% set has_address = coord.street or coord.house_number or
+                coord.postcode or coord.city %} {% if has_address %}
+                <p class="text-c-gray:-14 m-0" sm="text-110">
+                  {% if coord.street or coord.house_number %} {{ coord.street }}{%
+                  if coord.house_number %} {% endif %}{{ coord.house_number }}{%
+                  if coord.postcode or coord.city %},{% endif %} {% endif %} {% if
+                  coord.postcode or coord.city %} {{ coord.postcode }} {{
+                  coord.city }} {% endif %}
+                </p>
+                {% else %}
+                <p class="text-c-gray:-14" sm="text-110">Address not available</p>
+                {% endif %}
+              </section>
+            </div>
+          </a>
+        </article>
         {% endfor %}
       </div>
 
       <!-- Pagination Controls -->
-      <div class="d-flex j-content-center a-items-center mt-5 gap-4">
+      <div class="d-flex j-content-center a-items-center mt-8 gap-4" sm="mt-12" md="mt-14">
         {% if prev_page %}
         <a
           href="?page={{ prev_page }}"
-          class="px-6 py-3 bg-c-tealblue:-5 hover:bg-c-tealblue:-8 text-c-white rounded-md"
+          class="px-6 py-3 bg-c-tealblue:-5 text-c-white rounded-md min-w-28 text-a-center" hover="bg-c-tealblue:-8"
         >
           Previous
         </a>
         {% endif %} {% if next_page %}
         <a
           href="?page={{ next_page }}"
-          class="px-6 py-3 bg-c-tealblue:-5 hover:bg-c-tealblue:-8 text-c-white rounded-md"
+          class="px-8 py-3 bg-c-tealblue:-5 text-c-white rounded-md min-w-28 text-a-center" hover="bg-c-tealblue:-8"
         >
           Next
         </a>
