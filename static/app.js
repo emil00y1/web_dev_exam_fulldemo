@@ -37,8 +37,50 @@ document.addEventListener("DOMContentLoaded", () => {
    if (document.querySelector(".tab-container")) {
     initializeTabs();
   }
+  showClearBtn();
 
 });
+
+function showClearBtn() {
+    // Get all search inputs and clear buttons
+    const searchInputs = document.querySelectorAll('.search-input');
+    const clearButtons = document.querySelectorAll('.clear-button');
+    
+    // Loop through each search input to add event listeners
+    searchInputs.forEach((input) => {
+        // Find the associated clear button within the same search wrapper
+        const clearButton = input.closest('.search-wrapper').querySelector('.clear-button');
+        
+        // Add input event listener to show/hide clear button
+        input.addEventListener('input', function() {
+            clearButton.classList.toggle('hidden', !this.value);
+        });
+        
+        // Initialize clear button visibility based on initial input value
+        clearButton.classList.toggle('hidden', !input.value);
+    });
+
+    // Add click event listeners to all clear buttons
+    clearButtons.forEach((button) => {
+        button.addEventListener('click', function() {
+            // Find the closest search wrapper and get its input
+            const wrapper = this.closest('.search-wrapper');
+            const input = wrapper.querySelector('.search-input');
+            
+            // Clear the input value
+            input.value = '';
+            
+            // Hide the clear button
+            this.classList.add('hidden');
+            
+            // Focus the input
+            input.focus();
+        });
+    });
+}
+
+
+
 
 // Signup form initialization and handling
 function initializeSignupForm() {

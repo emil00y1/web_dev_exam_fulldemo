@@ -50,13 +50,13 @@
                   </div>
                 </div>
                 {% if item_images[item['item_pk']]|length > 1 %}
-                <button class="carousel-prev p-absolute left-2 top-24 transform translate-y-(-50%) bg-c-white rounded-full w-8 h-8 d-flex a-items-center j-content-center shadow-md z-10 ts-125 opacity-75"
+                <button class="carousel-prev p-absolute left-2 top-24 transform translate-y-(-50%) bg-c-white rounded-full w-8 h-8 d-flex a-items-center j-content-center shadow-md z-10 ts-125 opacity-75" focus="outline-1 outline-c-tealblue:-5"
                         >
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="stroke-c-gray:-14 min-w-(20px)">
                     <path d="M15 18l-6-6 6-6" />
                   </svg>
                 </button>
-                <button class="carousel-next p-absolute right-2 top-24 transform translate-y-(-50%) bg-c-white rounded-full w-8 h-8 d-flex a-items-center j-content-center shadow-md z-10 ts-125 opacity-75"
+                <button class="carousel-next p-absolute right-2 top-24 transform translate-y-(-50%) bg-c-white rounded-full w-8 h-8 d-flex a-items-center j-content-center shadow-md z-10 ts-125 opacity-75" focus="outline-1 outline-c-tealblue:-5"
                         >
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2" class="stroke-c-gray:-14 min-w-(20px)">
                     <path d="M9 18l6-6-6-6" />
@@ -89,7 +89,9 @@
                     type="button"
                     class="menu-quantity-decrease rounded-full cursor-pointer bg-c-transparent text-c-tealblue:-6 text-140 d-flex a-items-center h-min-content pa-3 cursor-not-allowed" xm="px-2" xl="px-3"
                     data-item-id="{{ item['item_pk'] }}"
+                    aria-label="Decrease quantity by 1"
                     parent
+                    focus="outline-1 outline-c-tealblue:-5"
                   >
                     <svg
                       class="fill-c-tealblue:-6"
@@ -112,7 +114,7 @@
                     readonly
                     class="menu-quantity-input text-a-center border-0 bg-c-transparent max-w-14 text-c-tealblue:-6 text-w-semibold text-105 pa-0"
                     sm="max-w-12"
-                    
+                    tabindex="-1"
                     data-item-id="{{ item['item_pk'] }}"
                   />
     
@@ -121,7 +123,9 @@
                     type="button"
                     class="menu-quantity-increase rounded-full cursor-pointer bg-c-transparent text-c-tealblue:-6 text-140 d-flex a-items-center h-min-content pa-3" xm="px-2" xl="px-3"
                     data-item-id="{{ item['item_pk'] }}"
+                    aria-label="Increase quantity by 1"
                     parent
+                    focus="outline-1 outline-c-tealblue:-5"
                   >
                     <svg
                       class="fill-c-tealblue:-6"
