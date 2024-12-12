@@ -33,7 +33,7 @@
                     <span>Password</span>
                     <span class="ml-auto text-c-gray:+25">{{ x.USER_PASSWORD_MIN }} to {{ x.USER_PASSWORD_MAX }} chars</span>
                 </label>
-                <input name="user_password" id="user_password" type="text" mix-check="{{ x.REGEX_USER_PASSWORD }}" focus="outline-1 outline-c-tealblue:-6 outline-o-0.5">
+                <input name="user_password" id="user_password" type="password" mix-check="{{ x.REGEX_USER_PASSWORD }}" focus="outline-1 outline-c-tealblue:-6">
             </div>
             <button mix-post="/login" mix-data="#frm_user_login" class="text-c-white bg-c-tealblue:-5 cursor-pointer py-3 px-5 rounded-sm" hover="bg-c-tealblue:-8" focus="outline-1 outline-c-tealblue:-6">
                 Login
