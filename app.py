@@ -2531,14 +2531,9 @@ def edit_item(item_pk):
 @app.post("/items/<item_pk>/add_image")
 def add_item_image(item_pk):
     try:
-        # Ensure the user is logged in
         user = session.get("user")
-        if not user:
-            return "Please log in to add images.", 401
-
-        # Ensure the user has the role "restaurant"
-        if "restaurant" not in user.get("roles", []):
-            return "Access restricted to restaurant users only.", 403
+        if not "restaurant" in session.get("user", {}).get("roles", []): 
+            return redirect(url_for("view_login"))
 
         # Validate the item_pk (ensure it's a valid UUID)
         item_pk = x.validate_uuid4(item_pk)
