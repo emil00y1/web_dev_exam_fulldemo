@@ -20,6 +20,7 @@
                             class="basket-quantity-decrease rounded-full cursor-pointer bg-c-transparent text-c-tealblue:-6 text-140 d-flex a-items-center h-min-content pa-3 {% if item.quantity <= 1 %}cursor-not-allowed{% endif %}"
                             data-item-id="{{ item.item_pk }}"
                             data-item-price="{{ item.price }}"
+                            focus="outline-1 outline-c-tealblue:-5"
                         >
                             <svg
                                 class="fill-c-tealblue:-6"
@@ -50,6 +51,7 @@
                             class="basket-quantity-increase rounded-full cursor-pointer bg-c-transparent text-c-tealblue:-6 text-140 d-flex a-items-center h-min-content pa-3"
                             data-item-id="{{ item.item_pk }}"
                             data-item-price="{{ item.price }}"
+                            focus="outline-1 outline-c-tealblue:-5"
                         >
                             <svg
                                 class="fill-c-tealblue:-6"
@@ -67,7 +69,7 @@
             <button
                 type="button"
                 mix-get="/remove-from-basket/{{ item.item_pk }}"
-                
+                focus="outline-1 outline-c-tealblue:-5"
                 hover="bg-c-red:-14 text-c-white:-6 cursor-pointer"
             >Remove</button>
         </div>
