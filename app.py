@@ -10,6 +10,8 @@ from typing import Dict, Tuple, Optional, Union
 import x
 import uuid
 import time
+from datetime import datetime, timedelta
+import random
 import redis
 import os, io
 from config import config  # Import our configuration
@@ -429,53 +431,44 @@ def view_login():
 
 
 
-@app.get("/resend-verification/<email>")
-@x.no_cache
-def resend_verification(email):
+@app.post("/resend-code")
+def resend_verification_code():
     try:
-        db, cursor = x.db()
+        verification = session.get('verification')
+        if not verification:
+            return redirect(url_for("view_signup"))
+            
+        # Generate new code and update expiry
+        new_code = ''.join([str(random.randint(0, 9)) for _ in range(config.VERIFICATION_CODE_LENGTH)])
+        new_expiry = (datetime.now() + timedelta(minutes=config.VERIFICATION_CODE_EXPIRY)).timestamp()
         
-        cursor.execute("""
-            SELECT user_verification_key
-            FROM users
-            WHERE user_email = %s AND user_verified_at = 0
-        """, (email,))
-        result = cursor.fetchone()
+        # Update session
+        verification['code'] = new_code
+        verification['expiry'] = new_expiry
+        session['verification'] = verification
         
-        if not result:
-            toast = render_template("___toast.html", message="No unverified account found with this email")
-            return f"""<template mix-target="#toast">{toast}</template>""", 404
-            
-        try:
-            verification_key = result["user_verification_key"]
-            email_body = f"""To verify your account, please <a href="{config.DOMAIN}/verify/{verification_key}">click here</a>"""
-            x.send_email(email, "Please verify your account", email_body)
-            return "", 200
-            
-        except Exception as e:
-            ic(e)  # Using project's debug print pattern
-            toast = render_template("___toast.html", message=result)
-            return f"""<template mix-target="#toast">{toast}</template>""", 500
-            
+        # Send new email
+        email_body = f"""
+        <h1>New Verification Code</h1>
+        <p>Your new verification code is: <strong>{new_code}</strong></p>
+        <p>This code will expire in {config.VERIFICATION_CODE_EXPIRY} minutes.</p>
+        """
+        x.send_email(verification['email'], "New Verification Code", email_body)
+        
+        return """
+            <template mix-target="#verification-message" mix-replace>
+                <p class="text-c-green:-14 mt-4">A new verification code has been sent to your email.</p>
+            </template>
+        """
+        
     except Exception as ex:
         ic(ex)
-        if "db" in locals(): db.rollback()
-        
-        if isinstance(ex, x.CustomException):
-            toast = render_template("___toast.html", message=ex.message)
-            return f"""<template mix-target="#toast">{toast}</template>""", ex.code
-            
-        if isinstance(ex, x.mysql.connector.Error):
-            ic(ex)
-            toast = render_template("___toast.html", message="Database error")
-            return f"""<template mix-target="#toast">{toast}</template>""", 500
-            
-        toast = render_template("___toast.html", message="System under maintenance")
-        return f"""<template mix-target="#toast">{toast}</template>""", 500
-        
-    finally:
-        if "cursor" in locals(): cursor.close()
-        if "db" in locals(): db.close()
+        return """
+            <template mix-target="#verification-error">
+                <p class="text-c-red:-14 mt-4">Failed to resend verification code. Please try again.</p>
+            </template>
+        """, 500
+    
 
 @app.get("/passwordrecovery")
 @x.no_cache
@@ -910,20 +903,10 @@ def signup():
         user_password = x.validate_user_password()
         hashed_password = generate_password_hash(user_password)
         
-        user_pk = str(uuid.uuid4())
-        user_avatar = ""
-        user_created_at = int(time.time())
-        user_deleted_at = 0
-        user_blocked_at = 0
-        user_updated_at = 0
-        user_verified_at = 0
-        user_verification_key = str(uuid.uuid4())
-
         user_role_pk = request.form.get("role")
-
         db, cursor = x.db()
 
-        # Ensure the selected role is valid and not "admin"
+        # First validate the role selection
         cursor.execute("""
             SELECT role_name FROM roles WHERE role_pk = %s
         """, (user_role_pk,))
@@ -934,14 +917,57 @@ def signup():
         
         if selected_role["role_name"].lower() == "admin":
             raise x.CustomException("Unauthorized role selection", 400)
-        
-        # Check for existing email
-        cursor.execute("SELECT user_deleted_at FROM users WHERE user_email = %s", (user_email,))
+
+        # Check for existing email and get user_pk if exists
+        cursor.execute("SELECT user_pk, user_deleted_at FROM users WHERE user_email = %s", (user_email,))
         existing_user = cursor.fetchone()
         
+        # If user exists and is not deleted, return error
         if existing_user and existing_user["user_deleted_at"] == 0:
             toast = render_template("___toast.html", message="Email not available")
             return f"""<template mix-target="#toast" mix-bottom>{toast}</template>""", 400
+
+        # Generate verification code
+        verification_code = ''.join([str(random.randint(0, 9)) for _ in range(config.VERIFICATION_CODE_LENGTH)])
+        verification_expiry = (datetime.now() + timedelta(minutes=config.VERIFICATION_CODE_EXPIRY)).timestamp()
+        
+        current_time = int(time.time())
+        
+        if existing_user:
+            # Update existing user
+            user_pk = existing_user["user_pk"]
+            cursor.execute("""
+                UPDATE users 
+                SET user_deleted_at = 0,
+                    user_verified_at = 0,
+                    user_name = %s,
+                    user_last_name = %s,
+                    user_password = %s,
+                    user_updated_at = %s
+                WHERE user_pk = %s
+            """, (user_name, user_last_name, hashed_password, 
+                 current_time, user_pk))
+                 
+            # Update the role
+            cursor.execute("""
+                UPDATE users_roles 
+                SET user_role_role_fk = %s 
+                WHERE user_role_user_fk = %s
+            """, (user_role_pk, user_pk))
+        else:
+            # Create new user
+            user_pk = str(uuid.uuid4())
+            cursor.execute(
+                'INSERT INTO users VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)',
+                (user_pk, user_name, user_last_name, user_email, hashed_password, 
+                 "", current_time, 0, 0, 0, 0)
+            )
+            
+            # Add user role
+            cursor.execute("""
+                INSERT INTO users_roles (user_role_user_fk, user_role_role_fk)
+                VALUES (%s, %s)
+            """, (user_pk, user_role_pk))
 
         # Handle restaurant address if role is restaurant
         if selected_role["role_name"].lower() == "restaurant":
@@ -964,52 +990,50 @@ def signup():
                 return f"""<template mix-target="#toast" mix-bottom>{toast}</template>""", 400
                 
             formatted_coords = geocoder.format_coordinates(*coords)
-        
-        # Insert or update user
-        if existing_user:
+
+            # Update or insert coordinates
             cursor.execute("""
-                UPDATE users 
-                SET user_deleted_at = 0,
-                    user_verified_at = 0,
-                    user_name = %s,
-                    user_last_name = %s,
-                    user_password = %s,
-                    user_verification_key = %s,
-                    user_updated_at = %s
-                WHERE user_email = %s
-            """, (user_name, user_last_name, hashed_password, 
-                 user_verification_key, user_created_at, user_email))
-        else:
-            cursor.execute(
-                'INSERT INTO users VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)',
-                (user_pk, user_name, user_last_name, user_email, hashed_password, 
-                 user_avatar, user_created_at, user_deleted_at, user_blocked_at, 
-                 user_updated_at, user_verified_at, user_verification_key)
-            )
+                SELECT coords_pk FROM coords WHERE restaurant_fk = %s
+            """, (user_pk,))
+            existing_coords = cursor.fetchone()
             
-        # Add user role
-        cursor.execute("""
-            INSERT INTO users_roles (user_role_user_fk, user_role_role_fk)
-            VALUES (%s, %s)
-        """, (user_pk, user_role_pk))
+            if existing_coords:
+                cursor.execute("""
+                    UPDATE coords 
+                    SET coordinates = %s, street = %s, house_number = %s,
+                        postcode = %s, city = %s
+                    WHERE restaurant_fk = %s
+                """, (formatted_coords, street, house_number, 
+                      postcode, city, user_pk))
+            else:
+                coords_pk = str(uuid.uuid4())
+                cursor.execute("""
+                    INSERT INTO coords (coords_pk, coordinates, restaurant_fk,
+                                      street, house_number, postcode, city)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """, (coords_pk, formatted_coords, user_pk, street,
+                      house_number, postcode, city))
 
-        # If restaurant, save address and coordinates
-        if selected_role["role_name"].lower() == "restaurant":
-            coords_pk = str(uuid.uuid4())
-            cursor.execute("""
-                INSERT INTO coords (
-                    coords_pk, coordinates, restaurant_fk, 
-                    street, house_number, postcode, city, formatted_address
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            """, (coords_pk, formatted_coords, user_pk, street, 
-                 house_number, postcode, city, full_address))
+        # Store verification code and expiry in session
+        session['verification'] = {
+            'code': verification_code,
+            'expiry': verification_expiry,
+            'user_pk': user_pk,
+            'email': user_email
+        }
 
-        email_body = f"""To verify your account, please <a href="{config.DOMAIN}/verify/{user_verification_key}">click here</a>"""
+        # Send verification email
+        email_body = f"""
+        <h1>Verify your email</h1>
+        <p>Hi {user_name},</p>
+        <p>Your verification code is: <strong>{verification_code}</strong></p>
+        <p>This code will expire in {config.VERIFICATION_CODE_EXPIRY} minutes.</p>
+        """
         x.send_email(user_email, "Please verify your account", email_body)
+        
         db.commit()
-
-        return f"""<template mix-redirect="/login?msg=verify_email&email={user_email}"></template>""", 201
-    
+        return f"""<template mix-redirect="/verify-code"></template>""", 201
+        
     except Exception as ex:
         ic(ex)
         if "db" in locals(): db.rollback()
@@ -1024,6 +1048,68 @@ def signup():
         if "cursor" in locals(): cursor.close()
         if "db" in locals(): db.close()
 
+
+@app.route("/verify-code", methods=['GET', 'POST'])
+@x.no_cache
+def verify_code():
+    if not session.get('verification'):
+        return redirect(url_for("view_signup"))
+        
+    if request.method == 'POST':
+        try:
+            verification = session.get('verification')
+            submitted_code = request.form.get('verification_code')
+            
+            # Check if code has expired
+            if datetime.now().timestamp() > verification['expiry']:
+                session.pop('verification', None)
+                return """
+                    <template mix-target="#verification-error">
+                        <p class="text-c-red:-14">Verification code has expired. Please sign up again.</p>
+                    </template>
+                """, 400
+                
+            # Check if code matches
+            if submitted_code != verification['code']:
+                return """
+                    <template mix-target="#verification-error" mix-replace>
+                        <p class="text-c-red:-14">Invalid verification code. Please try again.</p>
+                    </template>
+                """, 400
+                
+            # Update user verification status
+            db, cursor = x.db()
+            cursor.execute("""
+                UPDATE users 
+                SET user_verified_at = %s 
+                WHERE user_pk = %s
+            """, (int(time.time()), verification['user_pk']))
+            db.commit()
+            
+            # Clear verification from session
+            session.pop('verification', None)
+            
+            # Redirect to login
+            return """<template mix-redirect="/login?msg=verified"></template>"""
+            
+        except Exception as ex:
+            ic(ex)
+            if "db" in locals(): db.rollback()
+            return """
+                <template mix-target="#verification-error">
+                    <p class="text-c-red:-14">An error occurred. Please try again.</p>
+                </template>
+            """, 500
+        finally:
+            if "cursor" in locals(): cursor.close()
+            if "db" in locals(): db.close()
+            
+    # GET request - show verification page
+    return render_template(
+        "verify_code.html",
+        email=session['verification']['email'],
+        page_title="Verify Your Email"
+    )
 
 ##############################
 @app.post("/login")
@@ -2167,37 +2253,6 @@ def _________BRIDGE_________(): pass
 ##############################
 ##############################
 ##############################
-
-
-##############################
-@app.get("/verify/<verification_key>")
-@x.no_cache
-def verify_user(verification_key):
-    try:
-        ic(verification_key)
-        verification_key = x.validate_uuid4(verification_key)
-        user_verified_at = int(time.time())
-
-        db, cursor = x.db()
-        q = """ UPDATE users 
-                SET user_verified_at = %s 
-                WHERE user_verification_key = %s"""
-        cursor.execute(q, (user_verified_at, verification_key))
-        if cursor.rowcount != 1: x.raise_custom_exception("cannot verify account", 400)
-        db.commit()
-        return redirect(url_for("view_login", msg="verified"))
-
-    except Exception as ex:
-        ic(ex)
-        if "db" in locals(): db.rollback()
-        if isinstance(ex, x.CustomException): return ex.message, ex.code    
-        if isinstance(ex, x.mysql.connector.Error):
-            ic(ex)
-            return "Database under maintenance", 500        
-        return "System under maintenance", 500  
-    finally:
-        if "cursor" in locals(): cursor.close()
-        if "db" in locals(): db.close()    
 
 
 ####################ROUTE##############################

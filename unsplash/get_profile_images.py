@@ -1,23 +1,27 @@
-import requests
+import sys
 import os
-import x
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import requests
+from config import config
 
 # Unsplash search endpoint for photos
 url = "https://api.unsplash.com/search/photos"
 headers = {
-    "Authorization": f"Client-ID {x.UNSPLASH_ACCESS_KEY}"
+    "Authorization": f"Client-ID {config.UNSPLASH_ACCESS_KEY}"
 }
 
 # Search parameters
 search_params = {
-    "query": "portrait headshot",  # Keywords to find profile-style images
+    "query": "restaurant",         # Keywords to find profile-style images
     "orientation": "squarish",     # Prefer square images for profile pictures
     "per_page": 30,                # Max images per request
     "page": 1                      # Start on the first page
 }
 
 # Folder to save images
-save_folder = "avatars"
+save_folder = "static/avatars"
 os.makedirs(save_folder, exist_ok=True)
 
 def download_image(image_url, save_path):
@@ -46,7 +50,7 @@ def get_profile_images(total_images=100):
                     break
 
                 img_url = img["urls"]["regular"]
-                img_name = f"profile_{images_downloaded + 1}.jpg"
+                img_name = f"restaurant_{images_downloaded + 1}.jpg"
                 save_path = os.path.join(save_folder, img_name)
                 download_image(img_url, save_path)
                 images_downloaded += 1
@@ -57,4 +61,4 @@ def get_profile_images(total_images=100):
             break
 
 # Get 100 profile images
-get_profile_images(100)
+get_profile_images(50)

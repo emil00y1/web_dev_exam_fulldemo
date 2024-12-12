@@ -144,7 +144,7 @@
         </form>
         <div class="d-flex flex-col">
             {% if user["roles"][0] == "customer" %}
-            <button class="bg-c-transparent border-c-tealblue:-6 border-1 cursor-pointer w-full mt-4" hover="text-c-tealblue:-6" mix-get="/users/show-confirm-modal/{{user['user_pk']}}" focus="outline-1 outline-c-tealblue:-6 outline-o-0.5">Become a partner</button>
+            <button class="text-c-black:+14 bg-c-white:-6 cursor-pointer w-full mt-4" hover="bg-c-white:-16" mix-get="/users/show-confirm-modal/{{user['user_pk']}}" focus="outline-1 outline-c-tealblue:-6 outline-o-0.5">Become a partner</button>
             {% endif %}
             <button class="bg-none rounded-sm cursor-pointer text-80 px-0 py-1 w-max-content" hover="text-c-red:-14" mix-get="/users/show-delete-modal/{{user['user_pk']}}" focus="outline-1 outline-c-tealblue:-6 outline-o-0.5"
             >

@@ -111,7 +111,7 @@ def insert_coords(coord):
 def insert_user(user):       
     q = f"""
         INSERT INTO users
-        VALUES (%s, %s ,%s ,%s ,%s ,%s ,%s ,%s ,%s ,%s ,%s ,%s)        
+        VALUES (%s, %s ,%s ,%s ,%s ,%s ,%s ,%s ,%s ,%s ,%s)        
         """
     values = tuple(user.values())
     cursor.execute(q, values)
@@ -216,7 +216,6 @@ try:
             user_blocked_at INTEGER UNSIGNED,
             user_updated_at INTEGER UNSIGNED,
             user_verified_at INTEGER UNSIGNED,
-            user_verification_key CHAR(36),
             PRIMARY KEY(user_pk)
         )
         """        
@@ -325,7 +324,6 @@ try:
         "user_blocked_at" : 0,
         "user_updated_at" : 0,
         "user_verified_at" : int(time.time()),
-        "user_verification_key" : str(uuid.uuid4())
     }            
     insert_user(user)
     # Assign role to admin user
@@ -344,13 +342,12 @@ try:
         "user_last_name" : "Customer",
         "user_email" : "customer@fulldemo.com",
         "user_password" : generate_password_hash("password"),
-        "user_avatar" : "profile_11.jpg",
+        "user_avatar" : "profile_1.jpg",
         "user_created_at" : int(time.time()),
         "user_deleted_at" : 0,
         "user_blocked_at" : 0,
         "user_updated_at" : 0,
         "user_verified_at" : int(time.time()),
-        "user_verification_key" : str(uuid.uuid4())
     }
     insert_user(user)
    
@@ -371,13 +368,12 @@ try:
         "user_last_name" : "Partner",
         "user_email" : "partner@fulldemo.com",
         "user_password" : generate_password_hash("password"),
-        "user_avatar" : "profile_12.jpg",
+        "user_avatar" : "profile_2.jpg",
         "user_created_at" : int(time.time()),
         "user_deleted_at" : 0,
         "user_blocked_at" : 0,
         "user_updated_at" : 0,
         "user_verified_at" : int(time.time()),
-        "user_verification_key" : str(uuid.uuid4())
     }
     insert_user(user)
     # Assign role to partner user
@@ -396,13 +392,12 @@ try:
         "user_last_name" : "Restaurant",
         "user_email" : "restaurant@fulldemo.com",
         "user_password" : generate_password_hash("password"),
-        "user_avatar" : "profile_13.jpg",
+        "user_avatar" : "restaurant_3.jpg",
         "user_created_at" : int(time.time()),
         "user_deleted_at" : 0,
         "user_blocked_at" : 0,
         "user_updated_at" : 0,
         "user_verified_at" : int(time.time()),
-        "user_verification_key" : str(uuid.uuid4()),
     }
     insert_user(user)
     
@@ -429,13 +424,12 @@ try:
             "user_email" : fake.unique.user_name() + "@" + random.choice(domains),
             "user_password" : user_password,
             # user_password = hashed_password = generate_password_hash(fake.password(length=20))
-            "user_avatar" : "profile_"+ str(random.randint(1, 100)) +".jpg",
+            "user_avatar" : "profile_"+ str(random.randint(1, 10)) +".jpg",
             "user_created_at" : int(time.time()),
             "user_deleted_at" : 0,
             "user_blocked_at" : 0,
             "user_updated_at" : 0,
             "user_verified_at" : user_verified_at,
-            "user_verification_key" : str(uuid.uuid4())
         }
  
         insert_user(user)
@@ -458,13 +452,12 @@ try:
             "user_last_name" : fake.last_name(),
             "user_email" : fake.unique.email(),
             "user_password" : user_password,
-            "user_avatar" : "profile_"+ str(random.randint(1, 100)) +".jpg",
+            "user_avatar" : "profile_"+ str(random.randint(1, 10)) +".jpg",
             "user_created_at" : int(time.time()),
             "user_deleted_at" : 0,
             "user_blocked_at" : 0,
             "user_updated_at" : 0,
             "user_verified_at" : 0,
-            "user_verification_key" : str(uuid.uuid4())
         }
         
  
@@ -493,13 +486,12 @@ try:
             "user_last_name" : "",
             "user_email" : fake.unique.email(),
             "user_password" : user_password,
-            "user_avatar" : "profile_"+ str(random.randint(1, 100)) +".jpg",
+            "user_avatar" : "restaurant_"+ str(random.randint(1, 50)) +".jpg",
             "user_created_at" : int(time.time()),
             "user_deleted_at" : 0,
             "user_blocked_at" : 0,
             "user_updated_at" : 0,
             "user_verified_at" : user_verified_at,
-            "user_verification_key" : str(uuid.uuid4())
         }
         
  
@@ -521,7 +513,7 @@ try:
                     "item_pk": item_pk,
                     "restaurant_fk": user_pk,
                     "item_title": random.choice(food_names),
-                    "item_price": round(random.uniform(5, 30)),  # Random price between 5 and 30
+                    "item_price": round(random.uniform(5, 25)),  # Random price between 5 and 30
                     "item_deleted_at": 0,
                     "item_blocked_at": 0,
                     "item_updated_at": 0,

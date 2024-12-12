@@ -1,0 +1,58 @@
+{% include "_top.html" %}
+
+<main class="mx-4 mt-8 mb-16" md="mx-6" lg="mx-8">
+    <section class="mx-auto max-w-100 pb-4" sm="d-flex flex-col h-full j-content-center">
+        <h1 class="mb-8 text-w-semibold">Verify Your Email</h1>
+        
+        <p class="mb-4">We've sent a verification code to <strong>{{ email }}</strong></p>
+        
+        <form id="frm_verify_code" class="d-flex flex-col gap-4">
+            <div class="d-flex flex-col">
+                <label for="verification_code">
+                    <span>Enter 6-digit verification code</span>
+                </label>
+                <input 
+                    name="verification_code" 
+                    id="verification_code" 
+                    type="text" 
+                    pattern="[0-9]{6}" 
+                    maxlength="6"
+                    required
+                    class="text-center tracking-widest text-lg"
+                    focus="outline-1 outline-c-tealblue:-6">
+            </div>
+
+            
+            <button 
+                mix-post="/verify-code" 
+                mix-data="#frm_verify_code" 
+                class="text-c-white bg-c-tealblue:-5 cursor-pointer py-3 px-5 rounded-sm text-w-semibold"
+                hover="bg-c-tealblue:-8">
+                Verify
+            </button>
+        </form>
+        <div id="verification-error" class="d-none"></div>
+        <div id="verification-message" class="d-none"></div>
+        <div class="d-flex a-items-center mt-4 gap-1">
+            <p>
+                Didn't receive the code? 
+                
+            </p>
+            <form id="resend_code_form" class="d-inline-block">
+                <!-- Hidden input to store the email -->
+                <input type="hidden" name="email" value="{{ email }}">
+                <button 
+                    mix-post="/resend-code"
+                    mix-data="#resend_code_form"
+                    mix-await="Sending..."
+                    mix-default="Send again"
+                    class="text-c-tealblue:-5 cursor-pointer bg-c-transparent px-3 py-2"
+                    hover="text-c-tealblue:-8 bg-c-white:-6">
+                    Send again
+                </button>
+            </form>
+        </div>
+    </section>
+</main>
+
+{% include "_bottom.html" %}

@@ -16,7 +16,6 @@ ic.configureOutput(prefix=f'***** | ', includeContext=True)
 pythonanywhere = '/home/emil00y1/web_dev_exam_fulldemo'
 
 
-UNSPLASH_ACCESS_KEY = 'YOUR_KEY_HERE'
 ADMIN_ROLE_PK = "16fd2706-8baf-433b-82eb-8c7fada847da"
 CUSTOMER_ROLE_PK = "c56a4180-65aa-42ec-a945-5fd21dec0538"
 PARTNER_ROLE_PK = "f47ac10b-58cc-4372-a567-0e02b2c3d479"

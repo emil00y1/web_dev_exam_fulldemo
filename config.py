@@ -25,6 +25,13 @@ class BaseConfig:
     EMAIL_SENDER = os.getenv('EMAIL_SENDER')
     EMAIL_PASSWORD = os.getenv('EMAIL_PASSWORD')
     
+    UNSPLASH_ACCESS_KEY = '5q80T87RHJEW73_Klmhesgqtk7eYCE7MaWUYh8eGC7w'
+
+
+    # Verification settings
+    VERIFICATION_CODE_LENGTH = 6
+    VERIFICATION_CODE_EXPIRY = 10  # minutes
+
     # Domain configuration
     @property
     def DOMAIN(self):
