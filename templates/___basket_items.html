@@ -17,7 +17,7 @@
                             mix-post="/update-basket/{{ item.item_pk }}"
                             mix-data="#frm_decrease_{{ item.item_pk }}"
                             {% if item.quantity <= 1 %}disabled{% endif %}
-                            class="basket-quantity-decrease rounded-full cursor-pointer bg-c-transparent text-c-tealblue:-6 text-140 d-flex a-items-center h-min-content pa-3 {% if item.quantity <= 1 %}cursor-not-allowed{% endif %}"
+                            class="basket-quantity-decrease rounded-full tsm-0 cursor-pointer bg-c-transparent text-c-tealblue:-6 text-140 d-flex a-items-center h-min-content pa-3 {% if item.quantity <= 1 %}cursor-not-allowed{% endif %}"
                             data-item-id="{{ item.item_pk }}"
                             data-item-price="{{ item.price }}"
                             focus="outline-1 outline-c-tealblue:-5"
@@ -48,7 +48,7 @@
                             type="button"
                             mix-post="/update-basket/{{ item.item_pk }}"
                             mix-data="#frm_increase_{{ item.item_pk }}"
-                            class="basket-quantity-increase rounded-full cursor-pointer bg-c-transparent text-c-tealblue:-6 text-140 d-flex a-items-center h-min-content pa-3"
+                            class="basket-quantity-increase rounded-full tsm-0 cursor-pointer bg-c-transparent text-c-tealblue:-6 text-140 d-flex a-items-center h-min-content pa-3"
                             data-item-id="{{ item.item_pk }}"
                             data-item-price="{{ item.price }}"
                             focus="outline-1 outline-c-tealblue:-5"
@@ -68,6 +68,7 @@
             </div>
             <button
                 type="button"
+                class="tsm-0"
                 mix-get="/remove-from-basket/{{ item.item_pk }}"
                 focus="outline-1 outline-c-tealblue:-5"
                 hover="bg-c-red:-14 text-c-white:-6 cursor-pointer"
