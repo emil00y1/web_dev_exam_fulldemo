@@ -885,6 +885,7 @@ def logout():
     # ic("#"*30)
     # ic(session)
     session.pop("user", None)
+    session.pop("basket", None)  # This clears the basket
     # session.clear()
     # session.modified = True
     # ic("*"*30)
