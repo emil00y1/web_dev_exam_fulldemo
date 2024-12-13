@@ -1185,7 +1185,7 @@ def login():
         }
         ic(user)
         session["user"] = user
-        return """<template mix-redirect="/profile"></template>"""
+        return """<template mix-redirect="/"></template>"""
     except Exception as ex:
         ic(ex)
         if "db" in locals(): db.rollback()
