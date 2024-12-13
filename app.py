@@ -1139,6 +1139,37 @@ def login():
             toast = render_template("___toast.html", message="Invalid credentials")
             return f"""<template mix-target="#toast">{toast}</template>""", 401
         
+
+        # Check if user is verified
+        if rows[0]["user_verified_at"] == 0:
+            # Store verification info in session
+            verification_code = ''.join([str(random.randint(0, 9)) for _ in range(config.VERIFICATION_CODE_LENGTH)])
+            verification_expiry = (datetime.now() + timedelta(minutes=config.VERIFICATION_CODE_EXPIRY)).timestamp()
+            
+            session['verification'] = {
+                'code': verification_code,
+                'expiry': verification_expiry,
+                'user_pk': rows[0]["user_pk"],
+                'email': user_email
+            }
+
+            # Send verification email
+            email_body = f"""
+            <h1>Verify your email</h1>
+            <p>Hi {rows[0]["user_name"]},</p>
+            <p>Your verification code is: <strong>{verification_code}</strong></p>
+            <p>This code will expire in {config.VERIFICATION_CODE_EXPIRY} minutes.</p>
+            """
+            x.send_email(user_email, "Please verify your account", email_body)
+    
+            return f"""<template mix-target="#verification-error" mix-replace>
+                <div>
+                    <p>Please verify your email before logging in.</p>
+                    <a href="/verify-code" class="text-c-tealblue:-5" hover="text-c-tealblue:-8">Verify your email</a>
+                </div>
+            </template>""", 401
+
+
         roles = []
         for row in rows:
             roles.append(row["role_name"])

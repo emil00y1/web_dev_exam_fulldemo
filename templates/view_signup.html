@@ -3,7 +3,14 @@
 <main id="view_signup" class="mx-4 mb-16" md="mx-6" lg="mx-8">
     <section class="mx-auto max-w-100 pb-4" sm="d-flex flex-col h-full j-content-center">
         <h1 class="mb-8">Signup</h1>
-        <form id="frm_user_signup" class="d-flex flex-col gap-4">
+        <div id="loader" class="p-relative d-none">
+            <!-- Outer circle -->
+            <div class="w-16 h-16 border-4 border-c-tealblue:-6 rounded-full"></div>
+            
+            <!-- Spinning segment -->
+            <div class="w-16 h-16 border-4 border-transparent border-t-c-tealblue:+2 rounded-full p-absolute top-0 left-0 animation-spin"></div>
+        </div>
+        <form id="frm_user_signup" class="d-flex flex-col gap-4" >
             <div class="d-flex flex-col">
                 <label for="user_name">
                     <span>Name</span>
@@ -71,7 +78,7 @@
                 <input name="user_password" id="user_password" type="password" mix-check="{{ x.REGEX_USER_PASSWORD }}" focus="outline-1 outline-c-tealblue:-6">
             </div>        
     
-            <button mix-post="/users" mix-data="#frm_user_signup" class="text-c-white bg-c-tealblue:-5 cursor-pointer py-3 px-5 rounded-sm" hover="bg-c-tealblue:-8" focus="outline-1 outline-c-tealblue:-5 outline-o-0.5">
+            <button mix-post="/users" mix-data="#frm_user_signup" mix-wait="#loader" class="text-c-white bg-c-tealblue:-5 cursor-pointer py-3 px-5 rounded-sm" hover="bg-c-tealblue:-8" focus="outline-1 outline-c-tealblue:-5 outline-o-0.5">
                 Signup
             </button>
     
