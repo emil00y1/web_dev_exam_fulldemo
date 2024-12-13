@@ -889,7 +889,7 @@ def logout():
     # session.modified = True
     # ic("*"*30)
     # ic(session)
-    return redirect(url_for("view_login"))
+    return redirect(url_for("view_index"))
 
 
 ##############################
