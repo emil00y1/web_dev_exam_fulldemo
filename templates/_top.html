@@ -4,8 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link rel="stylesheet" href="{{ url_for('static', filename='mixhtml.css') }}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+    <script src="https://unpkg.com/mojocss"></script>
+    <script src="{{url_for('static', filename='app.js')}}" defer></script>
+    {% if user %}
+    <script src="{{url_for('static', filename='basket.js')}}" defer></script>
+    {% endif %}
+    <title>{{page_title}}</title>
+</head>
+<body class="w-full h-fullvh d-flex flex-col text-c-gray:-16">
     <script>
-        // Immediately create and show a spinner before anything else loads
         document.write(`
             <div id="loading-overlay" style="
                 position: fixed;
@@ -26,8 +36,7 @@
                     border-top-color: transparent;
                     border-radius: 50%;
                     animation: spin 1s linear infinite;
-                ">
-                </div>
+                "></div>
             </div>
             <style>
                 @keyframes spin {
@@ -36,18 +45,6 @@
             </style>
         `);
     </script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='mixhtml.css') }}">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
-    <script src="https://unpkg.com/mojocss"></script>
-    <script src="{{url_for('static', filename='app.js')}}" defer></script>
-    {% if user %}
-    <script src="{{url_for('static', filename='basket.js')}}" defer></script>
-    {% endif %}
-    <title>{{page_title}}</title>
-</head>
-<body class="w-full h-fullvh d-flex flex-col text-c-gray:-16">
-    
     <header class="bg-c-white px-6 py-5 mb-6 shadow-sm">
         <nav class="d-flex j-content-between a-items-center w-full">
             <!-- Logo -->

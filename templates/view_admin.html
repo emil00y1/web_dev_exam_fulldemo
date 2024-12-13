@@ -79,6 +79,8 @@
                     title="Delete User"
                     mix-put="/users/delete/{{user['user_pk']}}"
                     mix-data="#delete-form-{{user['user_pk']}}"
+                    mix-default="Delete user"
+                    mix-await="Deleting..."
                     focus="outline-1 outline-c-tealblue:-5"
 
                   >

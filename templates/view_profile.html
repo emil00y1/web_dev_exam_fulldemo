@@ -136,6 +136,8 @@
             {% endif %}
 
             <button mix-put="/users/{{ user['user_pk'] }}" mix-data="#frm_user_update"
+                mix-default="Update profile"
+                mix-await="Updating..."
                 class="text-c-white bg-c-tealblue:-5 cursor-pointer"
                 hover="bg-c-tealblue:-8"
                 focus="outline-1 outline-c-tealblue:-6 outline-o-0.5">
@@ -144,9 +146,9 @@
         </form>
         <div class="d-flex flex-col">
             {% if user["roles"][0] == "customer" %}
-            <button class="text-c-black:+14 bg-c-white:-6 cursor-pointer w-full mt-4" hover="bg-c-white:-16" mix-get="/users/show-confirm-modal/{{user['user_pk']}}" focus="outline-1 outline-c-tealblue:-6 outline-o-0.5">Become a partner</button>
+            <button class="text-c-black:+14 bg-c-white:-6 cursor-pointer w-full mt-4" hover="bg-c-white:-16" mix-get="/users/show-confirm-modal/{{user['user_pk']}}" focus="outline-1 outline-c-tealblue:-6 outline-o-0.5" mix-default="Become a partner" mix-await="Updating...">Become a partner</button>
             {% endif %}
-            <button class="bg-none rounded-sm cursor-pointer text-80 px-0 py-1 w-max-content" hover="text-c-red:-14" mix-get="/users/show-delete-modal/{{user['user_pk']}}" focus="outline-1 outline-c-tealblue:-6 outline-o-0.5"
+            <button class="bg-none rounded-sm cursor-pointer text-90 mt-2 px-0 py-1 w-max-content" hover="text-c-red:-14" mix-get="/users/show-delete-modal/{{user['user_pk']}}" focus="outline-1 outline-c-tealblue:-6 outline-o-0.5"
             >
                     Delete profile
             </button>

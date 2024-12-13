@@ -78,8 +78,8 @@
                 <input name="user_password" id="user_password" type="password" mix-check="{{ x.REGEX_USER_PASSWORD }}" focus="outline-1 outline-c-tealblue:-6">
             </div>        
     
-            <button mix-post="/users" mix-data="#frm_user_signup" mix-wait="#loader" class="text-c-white bg-c-tealblue:-5 cursor-pointer py-3 px-5 rounded-sm" hover="bg-c-tealblue:-8" focus="outline-1 outline-c-tealblue:-5 outline-o-0.5">
-                Signup
+            <button mix-post="/users" mix-data="#frm_user_signup" mix-default="Sign up" mix-await="Signing up..." class="text-c-white bg-c-tealblue:-5 cursor-pointer py-3 px-5 rounded-sm" hover="bg-c-tealblue:-8" focus="outline-1 outline-c-tealblue:-5 outline-o-0.5">
+                Sign up
             </button>
     
             <p>Already have an account? | <a href="{{url_for('view_login')}}" class="text-a-center text-c-black text-d-underline">Login</a></p>
