@@ -50,6 +50,14 @@
 <script src="{{url_for('static', filename='mixhtml.js')}}"></script>
 
 <script>
+        window.addEventListener('load', function() {
+        const overlay = document.getElementById('loading-overlay');
+        if (overlay) {
+            overlay.style.opacity = '0';
+            overlay.style.pointerEvents = 'none';
+            setTimeout(() => overlay.remove(), 300);
+        }
+    });
     mojo({
         patterns : {
            "input": {
