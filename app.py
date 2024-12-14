@@ -1137,8 +1137,7 @@ def login():
         #     toast = render_template("___toast.html", message="This user does not exist")
         #     return f"""<template mix-target="#toast">{toast}</template>""", 401
         if not check_password_hash(rows[0]["user_password"], user_password):
-            toast = render_template("___toast.html", message="Invalid credentials")
-            return f"""<template mix-target="#toast">{toast}</template>""", 401
+            return f"""<template mix-target="#login-error">Invalid credentials</template>""", 400  
         
 
         # Check if user is verified
@@ -1163,7 +1162,7 @@ def login():
             """
             x.send_email(user_email, "Please verify your account", email_body)
     
-            return f"""<template mix-target="#verification-error" mix-replace>
+            return f"""<template mix-target="#login-error" mix-replace>
                 <div>
                     <p>Please verify your email before logging in.</p>
                     <a href="/verify-code" class="text-c-tealblue:-5" hover="text-c-tealblue:-8">Verify your email</a>

@@ -148,6 +148,7 @@ REGEX_STREET = f"^.{{{STREET_MIN},{STREET_MAX}}}$"
 ##############################
 REGEX_POSTAL_CODE = "^\d{4}$"
 
+##############################
 REGEX_FIELD_REQUIRED = "^.{2,}$"
 
 ##############################

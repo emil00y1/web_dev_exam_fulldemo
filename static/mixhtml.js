@@ -59,13 +59,16 @@ async function mix_fetch_data(el){
         const attrs = frm.querySelectorAll("[mix-check]")
         for(let i = 0; i < attrs.length; i++){
             const input = attrs[i]
-            input.classList.remove("mix-error") 
+
+            if(input.closest('.d-none')) continue;
+
+            input.classList.remove("border-c-red:-6") 
             const regex = input.getAttribute("mix-check")
             re = new RegExp(regex)
             cl(re.test(input.value))
             if(!re.test(input.value)){
                 cl("mix-check failed")
-                input.classList.add("mix-error")
+                input.classList.add("border-c-red:-6")
                 
                 // Handle custom error message display
                 const errorMessage = input.getAttribute('mix-error') || 'Invalid input'
