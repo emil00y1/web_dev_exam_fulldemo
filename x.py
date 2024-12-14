@@ -140,6 +140,17 @@ def validate_item_image():
 
 
 ##############################
+STREET_MIN = 2
+STREET_MAX = 50
+REGEX_STREET = f"^.{{{STREET_MIN},{STREET_MAX}}}$"
+
+
+##############################
+REGEX_POSTAL_CODE = "^\d{4}$"
+
+REGEX_FIELD_REQUIRED = "^.{2,}$"
+
+##############################
 def send_email(recipient_email, subject, body, is_html=True):
     try:
         sender_email = config.EMAIL_SENDER

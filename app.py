@@ -1131,8 +1131,8 @@ def login():
         cursor.execute(q, (user_email,))
         rows = cursor.fetchall()
         if not rows:
-            toast = render_template("___toast.html", message="User not registered")
-            return f"""<template mix-target="#toast">{toast}</template>""", 400     
+            return f"""<template mix-target="#login-error">User not registered</template>""", 400  
+    
         # if rows[0]["user_deleted_at"] != 0:
         #     toast = render_template("___toast.html", message="This user does not exist")
         #     return f"""<template mix-target="#toast">{toast}</template>""", 401
@@ -1188,11 +1188,9 @@ def login():
         session["user"] = user
         return """<template mix-redirect="/"></template>"""
     except Exception as ex:
-        ic(ex)
         if "db" in locals(): db.rollback()
         if isinstance(ex, x.CustomException): 
-            toast = render_template("___toast.html", message=ex.message)
-            return f"""<template mix-target="#toast" mix-bottom>{toast}</template>""", ex.code    
+            return f"""<template mix-target="login-error">{ex.message}</template>""", ex.code    
         if isinstance(ex, x.mysql.connector.Error):
             ic(ex)
             return "<template>System upgrating</template>", 500        
