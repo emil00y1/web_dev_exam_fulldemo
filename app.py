@@ -867,8 +867,29 @@ def show_confirm_modal(user_pk):
             </template>
         """
 
+##############################
 
+@app.get("/users/show-change-password-modal/<user_pk>")
+def show_change_password_modal(user_pk):
+    try:
+        user = session.get("user")
+        if not user:
+            return redirect(url_for("view_login"))
 
+        modal_html = render_template("___change_password_modal.html", user=user, x=x)
+        return f"""
+            <template mix-target="body" mix-top>
+                {modal_html}
+            </template>
+        """
+    except Exception as ex:
+        ic(ex)
+        toast = render_template("___toast.html", message=str(ex))
+        return f"""
+            <template mix-target="#toast" mix-bottom>
+                {toast}
+            </template>
+        """
 
 ##############################
 ##############################
@@ -2261,7 +2282,83 @@ def item_unblock(item_pk):
         if "db" in locals(): db.close()
 
 
+##############################
+@app.put("/users/change-password/<user_pk>")
+def change_password(user_pk):
+    try:
+        if not session.get("user"):
+            return redirect(url_for("view_login"))
 
+        current_password = request.form.get("current_password")
+        new_password = request.form.get("new_password")
+        confirm_new_password = request.form.get("confirm_new_password")
+
+        # First validate that all fields are filled
+        if not all([current_password, new_password, confirm_new_password]):
+            return """
+                <template mix-target="#password-change-error">
+                    <div class="text-c-red:-6 mt-2">All fields are required</div>
+                </template>
+            """, 400
+
+        # Then check if new passwords match before proceeding
+        if new_password != confirm_new_password:
+            return """
+                <template mix-target="#password-change-error">
+                    <div class="text-c-red:-6 mt-2">New passwords do not match</div>
+                </template>
+            """, 400
+
+        db, cursor = x.db()
+        
+        # Next verify the current password is correct
+        cursor.execute("""SELECT user_password, user_email, user_name FROM users WHERE user_pk = %s""", 
+                      (user_pk,))
+        user_data = cursor.fetchone()
+        
+        if not check_password_hash(user_data["user_password"], current_password):
+            return """
+                <template mix-target="#password-change-error">
+                    <div class="text-c-red:-6 mt-2">Current password is incorrect</div>
+                </template>
+            """, 400
+
+        # If all validations pass, update the password
+        hashed_password = generate_password_hash(new_password)
+        cursor.execute("""
+            UPDATE users 
+            SET user_password = %s,
+                user_updated_at = %s 
+            WHERE user_pk = %s
+        """, (hashed_password, int(time.time()), user_pk))
+        
+        db.commit()
+
+        # Send confirmation email
+        email_body = f"""<h1>Password Changed</h1>
+            <p>Hi {user_data['user_name']}, your password has been successfully changed.</p>
+            <p>If you did not make this change, please contact support immediately.</p>
+        """
+        x.send_email(user_data["user_email"], "Password Changed Successfully", email_body)
+
+        # On success, remove the modal and show success toast
+        toast = render_template("___toast.html", message="Password updated successfully")
+        return f"""
+            <template mix-target="#change-password-modal" mix-replace></template>
+            <template mix-target="#toast" mix-bottom>{toast}</template>
+        """
+
+    except Exception as ex:
+        ic(ex)
+        if "db" in locals(): db.rollback()
+        return """
+            <template mix-target="#password-change-error">
+                <div class="text-c-red:-14 mt-2">An error occurred. Please try again.</div>
+            </template>
+        """, 500
+    finally:
+        if "cursor" in locals(): cursor.close()
+        if "db" in locals(): db.close()
 ##############################
 ##############################
 ##############################
