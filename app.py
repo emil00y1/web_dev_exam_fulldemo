@@ -828,7 +828,7 @@ def show_delete_modal(user_pk):
         if not session.get("user"):
             return redirect(url_for("view_login"))
 
-        modal_html = render_template("___delete_modal.html", user_pk=user_pk)
+        modal_html = render_template("___delete_modal.html", user_pk=user_pk, x=x)
         return f"""
             <template mix-target="body" mix-top>
                 {modal_html}
@@ -1410,12 +1410,7 @@ def confirm_delete(user_pk):
             x.raise_custom_exception("Unauthorized access", 403)
 
         password = request.form.get('password')
-        if not password:
-            return """
-                <template mix-target="#delete-modal-error">
-                    <p class="text-c-red:-14 mt-2">Password is required</p>
-                </template>
-            """
+       
 
         db, cursor = x.db()
         try:

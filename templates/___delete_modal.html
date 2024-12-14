@@ -1,4 +1,4 @@
-<div id="delete-modal" class="p-fixed inset-0 bg-c-black:+10 bg-alpha-50 d-flex a-items-center j-content-center z-101 h-full ts-500">
+<div id="delete-modal" class="p-fixed inset-0 bg-c-black:+10 bg-alpha-60 d-flex a-items-center j-content-center z-101 h-full ts-500">
   <div class="bg-c-white rounded-md pa-6 max-w-96 w-full mx-4">
     <h2 class="text-110 text-w-semibold mb-6">Confirm Account Deletion</h2>
     <form id="frm_account_delete" novalidate>
@@ -11,6 +11,8 @@
           name="password" 
           id="password"
           placeholder="Enter your password"
+          mix-check="{{ x.REGEX_USER_PASSWORD }}"
+          mix-error="Incorrect password"
           class="w-full p-2 border rounded"
           focus="outline-1 outline-c-tealblue:-6"
           required
