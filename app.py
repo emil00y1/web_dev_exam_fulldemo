@@ -317,7 +317,6 @@ def search_results():
         cursor.execute(restaurant_query, (search_term,))
         restaurants = cursor.fetchall()
         
-        # Rest of your existing search logic...
         items_query = """
             SELECT 
                 i.item_pk,
@@ -523,8 +522,11 @@ def view_create_password():
 def view_admin():
     # Check if user is logged in and admin
     user = session.get("user")
-
-    if not "admin" in user.get("roles", "") or not session.get("user", ""):
+    if not user:
+        return redirect(url_for("view_login"))
+    
+    # Then check if user has admin role
+    if "admin" not in user.get("roles", []):
         return redirect(url_for("view_login"))
     
     basket = session.get("basket", [])
@@ -2465,9 +2467,12 @@ def view_restaurant(restaurant_fk):
 @x.no_cache
 def restaurant_dashboard():
     try:
-        # Ensure the user is logged in
         user = session.get("user")
-        if not "restaurant" in user.get("roles", "") or not session.get("user", ""):
+        if not user:
+            return redirect(url_for("view_login"))
+        
+        # Then check if user has admin role
+        if "restaurant" not in user.get("roles", []):
             return redirect(url_for("view_login"))
 
         #basket
@@ -2760,7 +2765,7 @@ def add_item_image(item_pk):
         optimized_image = optimize_image(file)
         filename = f"item_{item_pk}_{int(time.time())}.webp"
         # Changed this line to use the static/dishes path directly
-        filepath = os.path.join('static', 'dishes', filename)
+        filepath = os.path.join(config.UPLOAD_FOLDER, filename)
 
         with open(filepath, 'wb') as f:
             f.write(optimized_image.getvalue())
@@ -2821,7 +2826,7 @@ def delete_item_image(item_pk, image_filename):
             return f"""<template mix-target="#toast">{toast}</template>""", 404
 
         # Delete the physical file from the dishes folder inside static
-        image_path = os.path.join('static', 'dishes', image_filename)
+        image_path = os.path.join(config.UPLOAD_FOLDER, image_filename)
         if os.path.exists(image_path):
             os.remove(image_path)
 

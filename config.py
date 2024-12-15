@@ -45,7 +45,7 @@ class DevelopmentConfig(BaseConfig):
         'database': os.getenv('DB_NAME', 'company')
     }
     SESSION_FILE_DIR = '/tmp/flask_session'
-    UPLOAD_FOLDER = './images'
+    UPLOAD_FOLDER = './static/dishes'
     AVATAR_FOLDER = './static/avatars'
     DEBUG = True
     DOMAIN = 'http://127.0.0.1'
@@ -58,7 +58,7 @@ class ProductionConfig(BaseConfig):
         'database': os.getenv('PROD_DB_NAME')
     }
     SESSION_FILE_DIR = '/home/emil00y1/web_dev_exam_fulldemo/flask_session'
-    UPLOAD_FOLDER = '/home/emil00y1/web_dev_exam_fulldemo/images'
+    UPLOAD_FOLDER = '/home/emil00y1/web_dev_exam_fulldemo/static/dishes'
     AVATAR_FOLDER = '/home/emil00y1/web_dev_exam_fulldemo/static/avatars'
     DEBUG = False
     SESSION_COOKIE_SECURE = True
