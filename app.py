@@ -94,6 +94,31 @@ def calculate_basket_totals(basket):
     return total_price, total_items
 
 
+def delete_user_avatars(user_pk):
+    """
+    Helper function to delete all avatar files associated with a user.
+    
+    Args:
+        user_pk: The user's primary key/ID
+        
+    Returns:
+        list: Names of successfully deleted files
+    """
+    avatar_dir = config.AVATAR_FOLDER
+    deleted_files = []
+    
+    # Find all avatar files for this user
+    for filename in os.listdir(avatar_dir):
+        if f"avatar_{user_pk}_" in filename:
+            try:
+                file_path = os.path.join(avatar_dir, filename)
+                os.remove(file_path)
+                deleted_files.append(filename)
+            except OSError as e:
+                print(f"Error deleting avatar file {filename}: {e}")
+                
+    return deleted_files
+
 
 ##############################
 def rate_limit_decorator(min_delay: float = 1.0):
@@ -662,8 +687,14 @@ def user_delete(user_pk):
         user_data = cursor.fetchone()
         user_email = user_data["user_email"]
         user_name = user_data["user_name"]
+        
+        # Delete all avatar files before updating the database
+        deleted_avatars = delete_user_avatars(user["user_pk"])
+        
+        # Update user record and clear avatar field
         cursor.execute("""UPDATE users 
-                      SET user_deleted_at = %s 
+                      SET user_deleted_at = %s,
+                          user_avatar = ''
                       WHERE user_pk = %s""", 
                       (user["user_deleted_at"], user["user_pk"]))
 
@@ -672,7 +703,6 @@ def user_delete(user_pk):
 
         db.commit()
 
-        # Format the deleted_at date and create the replacement HTML
         formatted_date = time.strftime('%A, %d %B %Y', time.localtime(user["user_deleted_at"]))
         deleted_html = f'<div class="d-flex a-items-center text-c-red:-14">Deleted: {formatted_date}</div>'
 
@@ -681,7 +711,7 @@ def user_delete(user_pk):
         email_body = f"""<h1>Account deleted</h1>
           <p>Hi {user_name}, your account has been deleted. We are sad to see you go.</p>"""
         x.send_email(user_email, "Your account has been deleted", email_body)
-        # Return both the deleted_at text and toast
+
         return f"""
             <template mix-target='#actions-{user_pk}'>
                 {deleted_html}
@@ -718,6 +748,7 @@ def user_delete(user_pk):
                 {toast}
             </template>
             """, 500
+
 ##############################
 @app.put("/items/delete/<item_pk>")
 def item_delete(item_pk):
@@ -1382,6 +1413,7 @@ def update_role(user_pk):
 @app.post("/users/confirm-delete/<user_pk>")
 def confirm_delete(user_pk):
     try:
+        # Authentication checks
         if not session.get("user"):
             return redirect(url_for("view_login"))
         
@@ -1392,106 +1424,90 @@ def confirm_delete(user_pk):
             x.raise_custom_exception("Unauthorized access", 403)
 
         password = request.form.get('password')
-        if not password:
+       
+        db, cursor = x.db()
+        
+        # Database operations
+        cursor.execute("""SELECT * FROM users WHERE user_pk = %s""", (user_pk,))
+        user_data = cursor.fetchone()
+        
+        if not user_data:
+            x.raise_custom_exception("User not found", 404)
+
+        # Password verification
+        if not check_password_hash(user_data["user_password"], password):
             return """
                 <template mix-target="#delete-modal-error">
-                    <p class="text-c-red:-14 mt-2">Password is required</p>
+                    <div class="text-c-red:-14 mt-2">Invalid password</div>
                 </template>
             """
 
-        db, cursor = x.db()
-        try:
-            cursor.execute("""SELECT * FROM users WHERE user_pk = %s""", (user_pk,))
-            user_data = cursor.fetchone()
-            
-            if not user_data:
-                x.raise_custom_exception("User not found", 404)
+        # Delete avatar files and update user record
+        deleted_avatars = delete_user_avatars(user_pk)
+        deleted_at = int(time.time())
+        
+        cursor.execute("""UPDATE users 
+                      SET user_deleted_at = %s,
+                          user_avatar = ''
+                      WHERE user_pk = %s""", 
+                      (deleted_at, user_pk))
+        
+        if cursor.rowcount == 0:
+            x.raise_custom_exception("User could not be deleted", 404)
+        
+        db.commit()
 
-            # Verify password
-            if not check_password_hash(user_data["user_password"], password):
-                return """
-                    <template mix-target="#delete-modal-error">
-                        <div class="text-c-red:-14 mt-2">Invalid password</div>
-                    </template>
-                """
+        # Send email and handle response
+        email_body = f"""<h1>Account deleted</h1>
+          <p>Hi {user_data['user_name']}, your account has been deleted. We are sad to see you go.</p>"""
+        x.send_email(user_data["user_email"], "Your account has been deleted", email_body)
 
-            # Proceed with deletion
-            deleted_at = int(time.time())
-            cursor.execute("""UPDATE users 
-                          SET user_deleted_at = %s 
-                          WHERE user_pk = %s""", 
-                          (deleted_at, user_pk))
-            
-            if cursor.rowcount == 0:
-                x.raise_custom_exception("User could not be deleted", 404)
-            
-            db.commit()
-
-            # Send confirmation email
-            email_body = f"""<h1>Account deleted</h1>
-              <p>Hi {user_data['user_name']}, your account has been deleted. We are sad to see you go.</p>"""
-            x.send_email(user_data["user_email"], "Your account has been deleted", email_body)
-
-            # Handle response based on who was deleted
-            toast_message = "Your account has been deleted" if current_user_pk == user_pk else "User deleted"
-            toast = render_template("___toast.html", message=toast_message)
-            
-            if current_user_pk == user_pk:
-                session.clear()
-                return f"""
-                    <template mix-target="#delete-modal" mix-replace></template>
-                    <template mix-redirect="/login"></template>
-                """
-
-            formatted_date = time.strftime('%A, %d %B %Y', time.localtime(deleted_at))
-            deleted_html = f'<div class="d-flex a-items-center text-c-red:-14">Deleted: {formatted_date}</div>'
-            
+        # Return appropriate response based on user type
+        toast_message = "Your account has been deleted" if current_user_pk == user_pk else "User deleted"
+        toast = render_template("___toast.html", message=toast_message)
+        
+        if current_user_pk == user_pk:
+            session.clear()
             return f"""
-                <template mix-target="#delete-modal"></template>
-                <template mix-target='#actions-{user_pk}'>
-                    {deleted_html}
-                </template>
-                <template mix-target="#toast" mix-bottom>
-                    {toast}
-                </template>
+                <template mix-target="#delete-modal" mix-replace></template>
+                <template mix-redirect="/login"></template>
             """
-            
-        finally:
-            cursor.close()
-            db.close()
+
+        formatted_date = time.strftime('%A, %d %B %Y', time.localtime(deleted_at))
+        deleted_html = f'<div class="d-flex a-items-center text-c-red:-14">Deleted: {formatted_date}</div>'
+        
+        return f"""
+            <template mix-target="#delete-modal"></template>
+            <template mix-target='#actions-{user_pk}'>
+                {deleted_html}
+            </template>
+            <template mix-target="#toast" mix-bottom>
+                {toast}
+            </template>
+        """
 
     except Exception as ex:
-        ic(ex)
-        if "db" in locals(): db.rollback()
+        if "db" in locals(): 
+            db.rollback()
         
+        # Error handling based on exception type
         if isinstance(ex, x.CustomException):
             toast = render_template("___toast.html", message=ex.message)
-            return f"""
-                <template mix-target="#toast" mix-bottom>
-                    {toast}
-                </template>
-                """, ex.code
+            return f"""<template mix-target="#toast" mix-bottom>{toast}</template>""", ex.code
         
         if isinstance(ex, x.mysql.connector.Error):
             ic(ex)
             toast = render_template("___toast.html", message="Database error")
-            return f"""
-                <template mix-target="#toast" mix-bottom>
-                    {toast}
-                </template>
-                """, 500
+            return f"""<template mix-target="#toast" mix-bottom>{toast}</template>""", 500
         
         toast = render_template("___toast.html", message="System under maintenance")
-        return f"""
-            <template mix-target="#toast" mix-bottom>
-                {toast}
-            </template>
-            """, 500
-
-
-
-
-
+        return f"""<template mix-target="#toast" mix-bottom>{toast}</template>""", 500
+        
+    finally:
+        if "cursor" in locals(): 
+            cursor.close()
+        if "db" in locals(): 
+            db.close()
 
 ##############################
 @app.post("/items")
@@ -2510,7 +2526,6 @@ def add_item():
             cursor.close()
         if "db" in locals():
             db.close()
-
 
 
 @app.post("/restaurant/delete_item/<item_pk>")
