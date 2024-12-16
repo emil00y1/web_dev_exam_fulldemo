@@ -342,7 +342,6 @@ def search_results():
         cursor.execute(restaurant_query, (search_term,))
         restaurants = cursor.fetchall()
         
-        # Rest of your existing search logic...
         items_query = """
             SELECT 
                 i.item_pk,
@@ -548,8 +547,11 @@ def view_create_password():
 def view_admin():
     # Check if user is logged in and admin
     user = session.get("user")
-
-    if not "admin" in user.get("roles", "") or not session.get("user", ""):
+    if not user:
+        return redirect(url_for("view_login"))
+    
+    # Then check if user has admin role
+    if "admin" not in user.get("roles", []):
         return redirect(url_for("view_login"))
     
     basket = session.get("basket", [])
@@ -859,7 +861,7 @@ def show_delete_modal(user_pk):
         if not session.get("user"):
             return redirect(url_for("view_login"))
 
-        modal_html = render_template("___delete_modal.html", user_pk=user_pk)
+        modal_html = render_template("___delete_modal.html", user_pk=user_pk, x=x)
         return f"""
             <template mix-target="body" mix-top>
                 {modal_html}
@@ -898,8 +900,29 @@ def show_confirm_modal(user_pk):
             </template>
         """
 
+##############################
 
+@app.get("/users/show-change-password-modal/<user_pk>")
+def show_change_password_modal(user_pk):
+    try:
+        user = session.get("user")
+        if not user:
+            return redirect(url_for("view_login"))
 
+        modal_html = render_template("___change_password_modal.html", user=user, x=x)
+        return f"""
+            <template mix-target="body" mix-top>
+                {modal_html}
+            </template>
+        """
+    except Exception as ex:
+        ic(ex)
+        toast = render_template("___toast.html", message=str(ex))
+        return f"""
+            <template mix-target="#toast" mix-bottom>
+                {toast}
+            </template>
+        """
 
 ##############################
 ##############################
@@ -1162,14 +1185,13 @@ def login():
         cursor.execute(q, (user_email,))
         rows = cursor.fetchall()
         if not rows:
-            toast = render_template("___toast.html", message="User not registered")
-            return f"""<template mix-target="#toast">{toast}</template>""", 400     
+            return f"""<template mix-target="#login-error">User not registered</template>""", 400  
+    
         # if rows[0]["user_deleted_at"] != 0:
         #     toast = render_template("___toast.html", message="This user does not exist")
         #     return f"""<template mix-target="#toast">{toast}</template>""", 401
         if not check_password_hash(rows[0]["user_password"], user_password):
-            toast = render_template("___toast.html", message="Invalid credentials")
-            return f"""<template mix-target="#toast">{toast}</template>""", 401
+            return f"""<template mix-target="#login-error">Invalid credentials</template>""", 400  
         
 
         # Check if user is verified
@@ -1194,7 +1216,7 @@ def login():
             """
             x.send_email(user_email, "Please verify your account", email_body)
     
-            return f"""<template mix-target="#verification-error" mix-replace>
+            return f"""<template mix-target="#login-error" mix-replace>
                 <div>
                     <p>Please verify your email before logging in.</p>
                     <a href="/verify-code" class="text-c-tealblue:-5" hover="text-c-tealblue:-8">Verify your email</a>
@@ -1219,11 +1241,9 @@ def login():
         session["user"] = user
         return """<template mix-redirect="/"></template>"""
     except Exception as ex:
-        ic(ex)
         if "db" in locals(): db.rollback()
         if isinstance(ex, x.CustomException): 
-            toast = render_template("___toast.html", message=ex.message)
-            return f"""<template mix-target="#toast" mix-bottom>{toast}</template>""", ex.code    
+            return f"""<template mix-target="login-error">{ex.message}</template>""", ex.code    
         if isinstance(ex, x.mysql.connector.Error):
             ic(ex)
             return "<template>System upgrating</template>", 500        
@@ -2280,7 +2300,83 @@ def item_unblock(item_pk):
         if "db" in locals(): db.close()
 
 
+##############################
+@app.put("/users/change-password/<user_pk>")
+def change_password(user_pk):
+    try:
+        if not session.get("user"):
+            return redirect(url_for("view_login"))
 
+        current_password = request.form.get("current_password")
+        new_password = request.form.get("new_password")
+        confirm_new_password = request.form.get("confirm_new_password")
+
+        # First validate that all fields are filled
+        if not all([current_password, new_password, confirm_new_password]):
+            return """
+                <template mix-target="#password-change-error">
+                    <div class="text-c-red:-6 mt-2">All fields are required</div>
+                </template>
+            """, 400
+
+        # Then check if new passwords match before proceeding
+        if new_password != confirm_new_password:
+            return """
+                <template mix-target="#password-change-error">
+                    <div class="text-c-red:-6 mt-2">New passwords do not match</div>
+                </template>
+            """, 400
+
+        db, cursor = x.db()
+        
+        # Next verify the current password is correct
+        cursor.execute("""SELECT user_password, user_email, user_name FROM users WHERE user_pk = %s""", 
+                      (user_pk,))
+        user_data = cursor.fetchone()
+        
+        if not check_password_hash(user_data["user_password"], current_password):
+            return """
+                <template mix-target="#password-change-error">
+                    <div class="text-c-red:-6 mt-2">Current password is incorrect</div>
+                </template>
+            """, 400
+
+        # If all validations pass, update the password
+        hashed_password = generate_password_hash(new_password)
+        cursor.execute("""
+            UPDATE users 
+            SET user_password = %s,
+                user_updated_at = %s 
+            WHERE user_pk = %s
+        """, (hashed_password, int(time.time()), user_pk))
+        
+        db.commit()
+
+        # Send confirmation email
+        email_body = f"""<h1>Password Changed</h1>
+            <p>Hi {user_data['user_name']}, your password has been successfully changed.</p>
+            <p>If you did not make this change, please contact support immediately.</p>
+        """
+        x.send_email(user_data["user_email"], "Password Changed Successfully", email_body)
+
+        # On success, remove the modal and show success toast
+        toast = render_template("___toast.html", message="Password updated successfully")
+        return f"""
+            <template mix-target="#change-password-modal" mix-replace></template>
+            <template mix-target="#toast" mix-bottom>{toast}</template>
+        """
+
+    except Exception as ex:
+        ic(ex)
+        if "db" in locals(): db.rollback()
+        return """
+            <template mix-target="#password-change-error">
+                <div class="text-c-red:-14 mt-2">An error occurred. Please try again.</div>
+            </template>
+        """, 500
+    finally:
+        if "cursor" in locals(): cursor.close()
+        if "db" in locals(): db.close()
 ##############################
 ##############################
 ##############################
@@ -2392,9 +2488,12 @@ def view_restaurant(restaurant_fk):
 @x.no_cache
 def restaurant_dashboard():
     try:
-        # Ensure the user is logged in
         user = session.get("user")
-        if not "restaurant" in user.get("roles", "") or not session.get("user", ""):
+        if not user:
+            return redirect(url_for("view_login"))
+        
+        # Then check if user has admin role
+        if "restaurant" not in user.get("roles", []):
             return redirect(url_for("view_login"))
 
         #basket
@@ -2686,7 +2785,7 @@ def add_item_image(item_pk):
         optimized_image = optimize_image(file)
         filename = f"item_{item_pk}_{int(time.time())}.webp"
         # Changed this line to use the static/dishes path directly
-        filepath = os.path.join('static', 'dishes', filename)
+        filepath = os.path.join(config.UPLOAD_FOLDER, filename)
 
         with open(filepath, 'wb') as f:
             f.write(optimized_image.getvalue())
@@ -2747,7 +2846,7 @@ def delete_item_image(item_pk, image_filename):
             return f"""<template mix-target="#toast">{toast}</template>""", 404
 
         # Delete the physical file from the dishes folder inside static
-        image_path = os.path.join('static', 'dishes', image_filename)
+        image_path = os.path.join(config.UPLOAD_FOLDER, image_filename)
         if os.path.exists(image_path):
             os.remove(image_path)
 
